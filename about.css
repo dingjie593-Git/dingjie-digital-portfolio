@@ -4,3 +4,5 @@
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}.portrait,.hand-title,.sticker,.spark{transform:none!important}}
 .timeline li{opacity:.48}.timeline li.visited{opacity:.68}.timeline li.selected{opacity:1}
 @media(max-width:800px){.portrait{width:64vw;left:-18%;bottom:18%}.arch{left:6%;top:43%;width:52px}}
+.scroll-story{height:100svh}.stage{position:relative;height:100svh;min-height:0}.stage-footer{gap:16px}.stage-footer p{margin-left:auto}
+@media(max-width:800px){.scroll-story{height:100svh}.stage{min-height:0}.stage-footer{font-size:7px;gap:10px}.stage-footer p{font-size:8px}.stage-footer button{font-size:8px}.stage-footer small{font-size:6px}.timeline li{padding-bottom:24px}}
