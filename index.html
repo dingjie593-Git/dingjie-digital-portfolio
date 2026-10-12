@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="丁洁的空间设计作品集：听她讲，也可以自己逛。Ding Jie's narrated interior design portfolio.">
+  <meta name="theme-color" content="#777d61"><title>丁洁 · 空间有戏 / Spaces in Play</title>
+  <link rel="icon" href="data:,"><link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <header class="masthead"><a class="identity" href="#" aria-label="丁洁，返回开场">丁 洁 <span>DING JIE / INTERIOR DESIGN</span></a><nav aria-label="章节 / Chapters"><button data-chapter="intro" class="nav-current">开场 <small>HELLO</small></button><button data-chapter="about">关于我 <small>ABOUT</small></button><button data-chapter="original">作品 <small>WORK</small></button></nav></header>
+  <main id="stage" data-scene="intro">
+    <div class="scene-caption"><span id="sceneNumber">01 / 03</span><span id="sceneLabel">认识一下 / SAY HELLO</span></div>
+    <section id="intro" class="scene active" aria-labelledby="helloTitle">
+      <div class="intro-copy"><p class="eyebrow">把想法，放进空间。<span>IDEAS TAKE SHAPE.</span></p><h1 id="helloTitle">空间<span class="play-word">有戏<em>↗</em></span></h1><p class="handwritten">Spaces in Play</p><p class="intro-description">我是丁洁，做商业空间与室内设计。<br><span>I'm Ding Jie. I design commercial spaces and interiors.</span></p><button id="start" class="start-button"><span class="triangle">▶</span> 听我讲 <small>LET'S PLAY</small></button><p class="duration-label">约 53 秒，先看一个项目 <span>A 53-second introduction & project study</span></p></div>
+    </section>
+    <section id="about" class="scene" aria-labelledby="aboutTitle" hidden>
+      <div class="about-copy"><h2 id="aboutTitle">关于丁洁<span>About Ding Jie</span></h2><p>从商业空间出发，把设计落实到空间关系与细部。<span>Commercial interiors, spatial thinking, and careful detailing.</span></p><ol class="career"><li data-node="0"><time>2019 — 2022</time><h3>上海派沃</h3><p>Shanghai PAIWO</p></li><li data-node="1"><time>2022 — 2025</time><h3>AICO</h3><p>商业及公共空间设计<br>Commercial & public spaces</p></li><li data-node="2"><time>2025 — 2026</time><h3>独立工作室</h3><p>上海小满来也空间设计有限公司<br>Independent studio / Shanghai Xiaoman Laiye</p></li></ol><p class="education">无锡太湖学院 · 土木工程<br><span>Wuxi Taihu University · Civil Engineering</span></p></div>
+    </section>
+    <section id="project" class="scene" aria-labelledby="projectTitle" hidden>
+      <div class="project-heading"><p class="eyebrow">FUZHOU / 2025 / SCHEME STUDY</p><h2 id="projectTitle">福州八匚汇 B2<span>Fuzhou Bafunhui B2</span></h2><p>平面调整：店铺尺度与游逛节点<br><span>Retail planning: tenant scale & browsing nodes</span></p></div>
+      <div class="paper-frame"><div class="paper-dots" aria-hidden="true"><i></i><i></i><i></i></div><div class="plans"><figure class="plan original-plan"><button class="image-open" data-image="assets/original.png" aria-label="放大原始布局 / Enlarge original layout"><img src="assets/original.png" alt="福州八匚汇B2原始空间布局，店铺数量33间"></button><figcaption><span>原始布局 / ORIGINAL</span><strong>33<small>间 / shops</small></strong></figcaption></figure><figure class="plan revised-plan"><button class="image-open" data-image="assets/revised.png" aria-label="放大调整方案 / Enlarge proposed plan"><img src="assets/revised.png" alt="福州八匚汇B2调整方案平面，方案店铺数量48间，保留原有防火分区"></button><div class="node-ring stage-ring"><span>舞台 / Stage</span></div><div class="node-ring exhibit-ring"><span>展览 / Exhibition</span></div><figcaption><span>调整方案 / PROPOSED</span><strong>48<small>间 / shops</small></strong></figcaption></figure></div><p class="plan-note">方案研究，非经营成果 <span>Proposed layout, not an operating result</span></p></div>
+      <div class="end-note"><h3>让游逛，遇见停留。</h3><p>More places to pause along the way.</p><button id="endReplay">再听一次 / REPLAY ↺</button></div>
+    </section>
+    <div id="actor" class="actor" aria-label="丁洁的卡通替身"><div class="actor-pose"><img class="actor-base" src="assets/character-cutout.png" alt="丁洁的卡通形象，黑色宽松T恤，带点鬼马的笑，侧向指示"><img class="actor-mouth" src="assets/character-talk.png" alt="" aria-hidden="true"></div><span class="actor-spark spark-one" aria-hidden="true">✳</span><span class="actor-spark spark-two" aria-hidden="true">↗</span></div>
+    <div id="subtitle" class="subtitle" aria-live="off"><p id="subtitleCn">点一下，让我带你看。<span></span></p><p id="subtitleEn">Press play. I'll show you around.</p></div>
+  </main>
+  <footer class="player"><button id="playPause" aria-label="播放 / Play">▶ <span>播放 / PLAY</span></button><button id="replay" aria-label="重播 / Replay">↺ <span>重播 / REPLAY</span></button><label class="seek-label"><span class="sr-only">播放进度 / Playback position</span><input id="seek" type="range" min="0" max="53" step="0.05" value="0"></label><span id="clock">00:00 / 00:53</span><button id="mute" aria-pressed="false" aria-label="静音 / Mute">♫</button><button id="fullScreen" aria-label="全屏 / Full screen">⛶</button></footer>
+  <details class="demo-note"><summary>样段说明 / ABOUT THIS DEMO</summary><p>这是首个可播放样段：中文临时配音、中英字幕、布局对照与同步高亮。角色目前采用两种嘴部状态测试语音节奏，精细口型、独立手臂动作和可旋转的3D模型尚未完成。<br>This working sample uses a temporary Chinese voice, bilingual subtitles, and synchronized plan emphasis. Two mouth states test speech timing; detailed lip shapes, independent arm animation, and a rotatable 3D model are still in development.</p></details>
+  <dialog id="imageDialog"><button id="closeImage" aria-label="关闭大图 / Close image">×</button><img id="largeImage" alt="项目图面放大 / Enlarged project drawing"></dialog>
+  <audio id="narration" src="assets/narration.wav" preload="metadata"></audio><script src="timeline.js"></script><script src="app.js"></script>
+</body></html>
