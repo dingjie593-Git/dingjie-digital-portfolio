@@ -1,0 +1,9 @@
+.actor-performance{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;clip-path:polygon(0 0,100% 0,100% 100%,18% 100%,18% 82%,0 82%)}
+.performance-ready .actor-performance{display:block}
+.performance-ready .actor-base,.performance-ready .actor-mouth{visibility:hidden}
+.performance-ready .actor-pose{transform:none!important;mask-image:none!important}
+.performance-ready .actor-spark{opacity:.55;font-size:35px}
+@media(min-width:601px){body:not(.project-mode) .performance-ready{aspect-ratio:1 / 1;height:85%;max-width:50%}.project-mode .performance-ready{aspect-ratio:1 / 1;height:73%;max-width:36%}}
+body:not(.project-mode) .performance-ready{bottom:25px!important}
+.project-mode .performance-ready{bottom:35px!important}
+@media(max-width:600px){body:not(.project-mode) .performance-ready{bottom:35px!important}.project-mode .performance-ready{bottom:24px!important}}

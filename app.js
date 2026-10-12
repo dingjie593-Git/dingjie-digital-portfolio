@@ -34,6 +34,7 @@
     // Time labels, not array indices, remain authoritative across segment pauses.
     let lo=0,hi=DEMO.mouth.length-1;
     while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(DEMO.mouth[mid][0]<=t)lo=mid;else hi=mid-1;}
+    window.actorPerformance?.render(t,index);
     actor.classList.toggle('speaking',playing && DEMO.mouth[lo][1] > .018 && t < DEMO.cues[index].end);
   }
   function frame(){sync();if(playing)raf=requestAnimationFrame(frame);}
