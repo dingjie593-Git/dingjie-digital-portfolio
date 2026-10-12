@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#747c60"><title>关于丁洁 · About Ding Jie</title><link rel="icon" href="data:,"><link rel="stylesheet" href="about.css"></head>
+<body>
+<header class="topbar"><a class="name" href="#top">丁 洁<span>DING JIE · INTERIOR DESIGN</span></a><span class="page-mark">01 / 关于我 <i>ABOUT</i></span><button id="voice" aria-label="播放本页开场介绍 / Play introduction" aria-pressed="false">♫ <span>听我介绍 <small>HEAR ME</small></span></button></header>
+<main id="top">
+<section class="scroll-story" aria-label="丁洁的个人介绍 / About Ding Jie">
+<div class="stage">
+<div class="texture" aria-hidden="true"></div>
+<div class="intro-label">SPACES, PEOPLE & EVERYDAY LIFE</div>
+<div class="portrait" id="portrait" aria-label="丁洁的卡通替身随滚动看向履历并做介绍手势"><canvas id="character" aria-hidden="true"></canvas><img id="fallback" src="assets/character-cutout.png" alt="丁洁的卡通形象"></div>
+<div class="hand-title"><p>关于</p><h1>丁洁<span>About<br>Ding Jie</span></h1><span class="chalk-line" aria-hidden="true"></span></div>
+<button class="sticker arch" aria-label="空间形状贴纸 / Space sticker"><svg viewBox="0 0 130 130" aria-hidden="true"><path d="M20 112V69C20 9 110 9 110 69v43H85V70C85 42 45 42 45 70v42Z" fill="#e0ceb4" stroke="#f5ecd7" stroke-width="8"/><path d="M52 113V79c0-25 26-25 26 0v34Z" fill="#b77953"/></svg></button>
+<button class="sticker orbit" aria-label="灵感星球贴纸 / Inspiration sticker"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="31" fill="#a4b767" stroke="#f5ecd7" stroke-width="6"/><ellipse cx="60" cy="60" rx="53" ry="17" transform="rotate(-28 60 60)" fill="none" stroke="#e8d69e" stroke-width="10"/><path d="m88 10 2 8 8 2-8 3-2 7-3-7-7-3 7-2Z" fill="#eff0b3"/></svg></button>
+<div class="chalk spark" aria-hidden="true">✳</div>
+<aside class="resume" aria-labelledby="resumeTitle">
+<p class="eyebrow" id="resumeTitle">我的路径 <span>MY JOURNEY</span></p>
+<p class="short-intro">我是丁洁，做商业空间与室内设计。<span>I'm Ding Jie. I design commercial spaces and interiors.</span></p>
+<ol class="timeline">
+<li class="selected" data-entry="0"><span class="dot" aria-hidden="true"></span><time>2019 — 2022</time><h2>上海派沃<span>SHANGHAI PAIWO</span></h2></li>
+<li data-entry="1"><span class="dot" aria-hidden="true"></span><time>2022 — 2025</time><h2>AICO</h2><p>商业及公共空间设计<span>Commercial & public spaces</span></p></li>
+<li data-entry="2"><span class="dot" aria-hidden="true"></span><time>2025 — 2026</time><h2>独立工作室<span>INDEPENDENT STUDIO</span></h2><p>上海小满来也空间设计有限公司<span>Shanghai Xiaoman Laiye Space Design</span></p></li>
+</ol>
+<p class="education">无锡太湖学院 · 土木工程<span>Wuxi Taihu University · Civil Engineering</span></p>
+</aside>
+<footer class="stage-footer"><span>空间与室内 <small>SPACES & INTERIORS</small></span><p id="scrollHint">向下滚动，认识我 <small>SCROLL TO MEET ME ↓</small></p><button id="reset" hidden>回到开场 ↗ <small>BACK TO START</small></button></footer>
+<div class="progress" aria-hidden="true"><i id="progressFill"></i></div>
+</div>
+</section>
+<section class="closing"><p>把想法，放进空间。</p><span>Ideas take shape.</span><a href="#top">再看一次 ↑ <small>BACK TO TOP</small></a></section>
+</main>
+<audio id="introAudio" src="assets/about-intro.wav" preload="metadata"></audio><script src="about.js"></script>
+</body></html>
