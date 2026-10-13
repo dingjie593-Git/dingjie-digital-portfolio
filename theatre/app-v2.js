@@ -1,6 +1,6 @@
 (() => {
  'use strict';const $=id=>document.getElementById(id),scenes=window.STORY,voice=$('voice'),reduced=matchMedia('(prefers-reduced-motion: reduce)');
- let page=0,beat=0,unlocked=false,playing=false,mode='browse',flow=true,version=0,raf=0,seeking=false,wheel=0,wheelStamp=0,flipStamp=0,timer=0,language='both',loading=false,modalResume=false;
+ let page=0,beat=0,unlocked=false,playing=false,mode='browse',flow=true,version=0,raf=0,seeking=false,wheel=0,wheelStamp=0,flipStamp=0,timer=0,language='both',loading=false,modalResume=false,starting=false,launch=0;
  const scene=()=>scenes[page],stamp=t=>`${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;
  function tell(t){$('status').textContent=t;$('status').hidden=false;clearTimeout(timer);timer=setTimeout(()=>$('status').hidden=true,4200)}
  function controls(){for(const id of ['performer','poster'])$(id).setAttribute('aria-label',playing?'暂停讲述':'继续讲述')}
@@ -13,10 +13,13 @@
  }
  function worldHeight(){return $('world').offsetHeight}
  function tick(){render();if(playing)raf=requestAnimationFrame(tick)}
- function pause(){playing=false;voice.pause();cancelAnimationFrame(raf);controls();render()}
- async function play(){const v=version;unlocked=true;mode='show';director.clearSelection();$('welcome').hidden=true;$('subtitles').hidden=false;
-  try{await director.prepare();if(v!==version)return;if(voice.ended)voice.currentTime=0;const promise=voice.play();tell(loading?'正在准备声音与场景…':'');await promise;if(v!==version)return;loading=false;playing=true;seeking=false;controls();$('status').hidden=true;cancelAnimationFrame(raf);tick();}
-  catch(e){if(v!==version||e.name==='AbortError')return;pause();tell('声音暂未载入，点击人物重试。')}
+ function pause(){launch++;starting=false;$('start').disabled=false;playing=false;voice.pause();cancelAnimationFrame(raf);controls();render()}
+ async function play(){if(starting)return;const v=version,attempt=++launch;starting=true;unlocked=true;mode='show';director.clearSelection();$('subtitles').hidden=false;$('start').disabled=true;tell('正在载入讲述…');
+  try{if(voice.ended)voice.currentTime=0;
+   // Start media in the click event before waiting for image preparation.
+   const sound=voice.play();await Promise.all([sound,director.prepare()]);if(v!==version||attempt!==launch)return;
+   starting=false;loading=false;playing=true;seeking=false;$('start').disabled=false;$('welcome').hidden=true;controls();$('status').hidden=true;cancelAnimationFrame(raf);tick();}
+  catch(e){if(v!==version||attempt!==launch)return;pause();if(page===0)$('welcome').hidden=false;tell(e.name==='NotAllowedError'?'请再点击一次人物，开始有声讲述。':'载入暂未完成，请点击人物或“跟我走一遍”重试。')}
  }
  function load(auto=false){const v=++version;voice.pause();cancelAnimationFrame(raf);playing=false;loading=true;voice.src=scene().audio;voice.load();const ready=()=>{if(v!==version)return;loading=false;render()};voice.addEventListener('loadeddata',ready,{once:true});if(auto)play();controls();render();}
  function go(n,auto=mode==='show'&&playing){if(n<0||n>=10)return;pause();page=n;beat=0;const p=scene();document.body.dataset.kind=p.kind;document.body.dataset.theme=p.theme;$('chapter').textContent=p.chapter;$('title').textContent=p.title;$('english').textContent=p.en;$('project').textContent=p.project;$('question').textContent=p.question;$('ending').hidden=p.kind!=='ending';$('welcome').hidden=unlocked||page!==0;$('subtitles').hidden=!unlocked||mode==='browse';director.configure(p,page);history.replaceState(null,'','#scene-'+(page+1));load(auto);
@@ -32,14 +35,14 @@
  window.openArtwork=openImage;for(const d of [$('catalog'),$('details'),$('lightbox')]){d.querySelector('.close').onclick=()=>d.close();d.addEventListener('close',()=>{if(!document.querySelector('dialog[open]')&&modalResume){modalResume=false;play()}});d.addEventListener('click',e=>{if(e.target===d)d.close()})}$('backGallery').onclick=()=>{$('lightbox').close();$('details').showModal()};
  $('start').onclick=()=>{flow=true;mode='show';play()};$('browse').onclick=()=>{unlocked=true;mode='browse';$('welcome').hidden=true;$('subtitles').hidden=true;openCatalog()};
  $('home').onclick=()=>go(0,false);$('directory').onclick=openCatalog;$('evidence').onclick=openDetails;
- for(const id of ['poster','performer']){$(id).onclick=()=>playing?pause():play();$(id).onkeydown=e=>{if(e.key==='Enter'||e.code==='Space'){e.preventDefault();e.stopPropagation();playing?pause():play()}}}
+ for(const id of ['poster','performer']){$(id).onclick=()=>playing||starting?pause():play();$(id).onkeydown=e=>{if(e.key==='Enter'||e.code==='Space'){e.preventDefault();e.stopPropagation();playing||starting?pause():play()}}}
  voice.addEventListener('seeked',()=>{render();seeking=false});voice.addEventListener('timeupdate',render);
  voice.addEventListener('ended',()=>{playing=false;cancelAnimationFrame(raf);render();if(flow&&mode==='show'&&page<9)go(page+1,true);else{controls();tell(page===9?'谢谢你跟着我走了一遍。':'本幕结束，继续下一幕或展开图纸。')}});voice.addEventListener('error',()=>{pause();loading=false;tell('声音暂未载入，请点击人物重试。')});voice.addEventListener('waiting',()=>{if(playing)tell('正在缓冲声音…')});
  $('mute').onclick=()=>{voice.muted=!voice.muted;$('mute').textContent=voice.muted?'静':'声';$('mute').setAttribute('aria-pressed',String(voice.muted));$('mute').setAttribute('aria-label',voice.muted?'恢复声音':'关闭声音')};$('language').onclick=()=>{language=language==='both'?'zh':language==='zh'?'en':'both';document.body.dataset.language=language;$('language').textContent=language==='both'?'中英':language==='zh'?'中文':'EN'};
  $('full').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen()}catch{tell('此浏览器暂不支持全屏。')}};
  scenes.forEach((p,i)=>{const li=document.createElement('li'),b=document.createElement('button'),n=document.createElement('b'),t=document.createElement('span'),s=document.createElement('strong'),small=document.createElement('small');n.textContent=String(i+1).padStart(2,'0');s.textContent=p.title;small.textContent=p.project;t.append(s,small);b.append(n,t);b.onclick=()=>{const resume=mode==='show'&&modalResume;modalResume=false;unlocked=true;$('catalog').close();go(i,resume)};li.append(b);$('sceneList').append(li)});
  for(let i=0;i<4;i++){const b=document.createElement('button');b.textContent=String(i+1).padStart(2,'0');b.setAttribute('aria-label','播放本幕第'+(i+1)+'段');b.onclick=()=>{seek(scene().beats[i].start,false);play()};$('beatIndex').append(b)}
- const dialogOpen=()=>document.querySelector('dialog[open]');window.addEventListener('keydown',e=>{if(dialogOpen()||/INPUT|BUTTON|A/.test(e.target.tagName))return;if(['ArrowRight','ArrowDown','PageDown'].includes(e.key)){e.preventDefault();go(page+1,mode==='show'&&playing)}else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){e.preventDefault();go(page-1,mode==='show'&&playing)}else if(e.code==='Space'){e.preventDefault();playing?pause():play()}});
+ const dialogOpen=()=>document.querySelector('dialog[open]');window.addEventListener('keydown',e=>{if(dialogOpen()||/INPUT|BUTTON|A/.test(e.target.tagName))return;if(['ArrowRight','ArrowDown','PageDown'].includes(e.key)){e.preventDefault();go(page+1,mode==='show'&&playing)}else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){e.preventDefault();go(page-1,mode==='show'&&playing)}else if(e.code==='Space'){e.preventDefault();playing||starting?pause():play()}});
  window.addEventListener('wheel',e=>{if(dialogOpen()||e.ctrlKey)return;const now=performance.now();if(now-wheelStamp>250)wheel=0;wheel+=e.deltaY;wheelStamp=now;if(Math.abs(wheel)>160&&now-flipStamp>1100){flipStamp=now;go(page+(wheel>0?1:-1),mode==='show'&&playing);wheel=0}},{passive:true});
  let touch=0;world.addEventListener('touchstart',e=>touch=e.touches[0].clientY,{passive:true});world.addEventListener('touchend',e=>{if(dialogOpen()||/BUTTON|A|INPUT/.test(e.target.tagName))return;const d=touch-e.changedTouches[0].clientY;if(Math.abs(d)>80)go(page+(d>0?1:-1),mode==='show'&&playing)},{passive:true});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});window.addEventListener('resize',()=>{seeking=true;director.reset();render();seeking=false});window.addEventListener('castready',render);window.addEventListener('materialready',()=>{const wasSeeking=seeking;if(!playing)seeking=true;director.reset();render();seeking=wasSeeking});reduced.addEventListener('change',render);
