@@ -18,7 +18,7 @@
  function draw(frame,facing=1){if(!ready||frame===lastFrame&&facing===lastFacing)return;lastFrame=frame;lastFacing=facing;const ai=frame>=40?2:frame>=20?1:0,a=atlases[ai],i=frame>=40?frame-40:frame>=20?frame-20:frame,b=a.boxes[i],cw=a.img.naturalWidth/4,ch=a.img.naturalHeight/a.rows,scale=510/a.boxes[a.ref].h;
   ctx.clearRect(0,0,300,570);ctx.save();ctx.translate(150,562);if(facing<0)ctx.scale(-1,1);ctx.drawImage(a.img,i%4*cw+b.left,Math.floor(i/4)*ch+b.top,b.right-b.left+1,b.bottom-b.top+1,(b.left-b.anchor)*scale,(b.top-b.bottom)*scale,(b.right-b.left+1)*scale,(b.bottom-b.top+1)*scale);ctx.restore();root.dataset.frame=String(frame);
  }
- const mobile=()=>innerWidth<=800, floor=()=>mobile()?.74:.86;
+ const mobile=()=>innerWidth<=800, floor=()=>.96;
  function hand(){const a=atlases[0],b=a.boxes[9],scale=510/a.boxes[6].h,s=root.offsetWidth/300;return {x:(215-b.anchor)*scale*s,y:(190-b.bottom)*scale*s-8*s}}
  function place(p,supportY=p.y,air=false){const w=world.offsetWidth,h=world.offsetHeight;current=p;root.style.transform=`translate(${Math.round(p.x*w-root.offsetWidth/2)}px,${Math.round(p.y*h-root.offsetWidth*570/300)}px)`;shadow.style.left=`${p.x*w-28}px`;shadow.style.top=`${supportY*h-4}px`;shadow.style.opacity=air?'.22':'.65';shadow.style.transform=`scale(${air?.65:1})`}
  function jump(a,b,u){u=clamp(u,0,1);if(u<.17)return {point:a,frame:20,air:false};if(u>.84)return {point:b,frame:u<.96?20:27,air:false};const t=(u-.17)/.67;return {point:{x:mix(a.x,b.x,ease(t)),y:mix(a.y,b.y,t)-Math.sin(t*Math.PI)*root.offsetWidth*.72/world.offsetHeight},frame:t<.15?21:25,air:true}}
@@ -26,7 +26,7 @@
   if(scene.kind==='compare'){const number=document.createElement('b');number.className='number';number.textContent=n===59?'33':'48';const small=document.createElement('span');small.textContent=n===59?'ORIGINAL':'PROPOSED';number.append(small);f.append(number)}stage.append(f);papers.set(n,f);return f}
  function configure(s,i){scene=s;page=i;key='';forced=null;active=[];previous=[];oldLayout=new Map();newLayout=new Map();stage.replaceChildren();papers=new Map();for(const n of [...new Set(s.beats.flatMap(b=>b.images))])makePaper(n);packet.hidden=true;root.dataset.contact='false';$('bridges').innerHTML='';lastTime=0;}
  function ratio(n){const x=papers.get(n).querySelector('img');return x.naturalWidth?x.naturalWidth/x.naturalHeight:16/9}
- function layout(ids,beat){const w=world.offsetWidth,h=world.offsetHeight,pad=mobile()?14:20,caption=mobile()?29:28,top=mobile()?214:h<620?173:211,space=floor()*h-top-26,out=new Map();if(!ids.length)return out;
+ function layout(ids,beat){const w=world.offsetWidth,h=world.offsetHeight,pad=mobile()?14:20,caption=mobile()?29:28,top=mobile()?262:h<620?173:211,space=floor()*h-top-26,out=new Map();if(!ids.length)return out;
   if(scene.kind==='ending'){const count=ids.length,span=mobile()?w*.9:w*.57,gap=mobile()?9:22,width=(span-gap*(count-1))/count;ids.forEach((n,i)=>{const ih=Math.min(mobile()?140:210,(width-pad)/ratio(n));out.set(n,{x:w*.05+i*(width+gap),y:mobile()?h*.35:h*.38,w:width,h:ih+caption+pad})});return out}
   if(mobile()){const n=ids[0],iw=Math.min(w*.9-pad,(space-caption-pad)*ratio(n)),ih=iw/ratio(n);out.set(n,{x:(w-iw-pad)/2,y:top+(space-ih-caption-pad)/2,w:iw+pad,h:ih+caption+pad});return out}
   const isStudy=scene.kind==='study'&&beat===1;
