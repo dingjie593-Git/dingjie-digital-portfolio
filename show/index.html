@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="丁洁的商业空间与室内设计作品集。听我讲，也可以自己逛。">
+  <title>丁洁 · 空间有戏 / Spaces in Play</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="stage.css">
+</head>
+<body data-kind="about">
+  <svg class="definitions" aria-hidden="true"><defs><filter id="chalk"><feTurbulence type="fractalNoise" baseFrequency=".64" numOctaves="3" seed="7" result="grain"/><feColorMatrix in="grain" type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 3 -.55" result="mask"/><feComposite in="SourceGraphic" in2="mask" operator="in"/></filter></defs></svg>
+  <div class="grain" aria-hidden="true"></div>
+  <header>
+    <button class="brand" id="home">DING JIE<span>SPACES & INTERIORS</span></button>
+    <nav aria-label="主导航"><button id="works">WORKS<span>作品</span></button><button id="about">ABOUT<span>关于我</span></button><button id="navPlay">PLAY<span>听我讲</span></button></nav>
+  </header>
+  <main id="stage">
+    <div class="headline"><p id="chapterTag"></p><h1 id="chapterTitle">ABOUT ME</h1><h2 id="subtitle">嗨，我是丁洁。</h2><p id="englishTitle"></p></div>
+    <div class="clay-ribbon" aria-hidden="true"><i></i><b></b><em></em></div>
+    <div id="paper" class="paper" hidden>
+      <div class="clay-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div id="artwork" class="artwork"></div>
+      <p id="sourceNote" class="source-note"></p>
+    </div>
+    <aside id="resume" class="resume">
+      <p class="intro">商业空间与室内设计<span>Commercial spaces & interiors</span></p>
+      <ol><li><time>2019–2022</time><h3>上海派沃</h3><p>上海派沃建筑装饰设计工程有限公司</p></li><li><time>2022–2025</time><h3>AICO</h3><p>商业与公共空间项目</p></li><li><time>2025–2026</time><h3>小满来也</h3><p>独立工作室<br>上海小满来也空间设计有限公司</p></li></ol>
+      <p class="education">无锡太湖学院 · 土木工程</p>
+    </aside>
+    <div id="actor" class="actor"><canvas id="cast" aria-label="丁洁的粘土卡通讲解角色"></canvas><img id="fallback" src="assets/character.png" alt="丁洁的卡通形象"></div>
+    <div id="scribble" class="scribble" aria-hidden="true">✳</div>
+    <div id="actionLabel" class="action-label" aria-hidden="true"></div>
+    <div id="outro" class="outro" hidden><p>让想法进入空间，<br>把关系想清楚。</p><a href="mailto:1161337508@qq.com">1161337508@qq.com ↗</a><a href="assets/portfolio.pdf" download="丁洁_作品集.pdf">完整作品集 PDF ↓</a></div>
+    <div id="welcome" class="welcome"><button id="start">▶ 听我讲<span>LET'S PLAY</span></button><button id="browse">自己逛逛 ↗</button><small>13个讲述单元 · 中文声音</small></div>
+    <p id="caption" class="caption"></p>
+  </main>
+  <footer>
+    <button id="play" aria-label="播放或暂停">▶ <span>PLAY</span></button>
+    <button id="replay" aria-label="重播本页">↺ <span>REPLAY</span></button>
+    <label class="seek-wrap"><span class="sr-only">本页播放进度</span><input id="seek" type="range" min="0" max="100" step="0.05" value="0"></label>
+    <span id="clock">00:00 / 00:00</span>
+    <button id="prev" aria-label="上一页">←</button><span id="pageNumber">01 / 13</span><button id="next" aria-label="下一页">→</button>
+    <button id="mute" aria-label="关闭声音" aria-pressed="false">声</button><button id="full" aria-label="进入全屏">⛶</button>
+  </footer>
+  <p id="notice" role="status" class="notice" hidden></p>
+  <dialog id="chapters"><button class="close" aria-label="关闭作品目录">×</button><h2>随便逛逛。</h2><p>选一个空间，也可以从头听我讲。</p><ol id="chapterList"></ol><a href="assets/portfolio.pdf" download>完整作品集 PDF ↓</a></dialog>
+  <dialog id="lightbox"><button class="close" aria-label="关闭大图">×</button><img id="largeImage" alt="作品图面放大"><p id="largeLabel"></p></dialog>
+  <audio id="voice" preload="metadata"></audio>
+  <script src="content.js"></script><script src="stage.js"></script>
+</body>
+</html>
