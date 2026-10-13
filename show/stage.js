@@ -119,10 +119,14 @@
     $('scribble').style.transform=`rotate(${18+Math.round(progress*3)*4}deg)`;
     drawFrame(frame);
     if(p.kind==='about')$('resume').querySelectorAll('li').forEach((li,i)=>li.classList.toggle('selected',clip===1&&(i===Math.min(2,Math.floor(progress*3)))));
+    window.spaceDirector?.render({page:pageIndex,clip,time:t,duration:d,pageTime:position(),playing,unlocked,pageData:p,reduced:reduced.matches});
   }
   function tick(){render();if(playing)raf=requestAnimationFrame(tick);}
   function pause(){playing=false;audio.pause();cancelAnimationFrame(raf);setButtons();render();}
   async function play(){
+    const preparationVersion=loadVersion;
+    try {await window.spaceDirector?.prepare?.();}catch{notify('人物素材未能加载，请刷新后重试。');return;}
+    if(preparationVersion!==loadVersion)return;
     unlocked=true;$('welcome').hidden=true;browseImage=null;renderKey='';
     if(audio.ended&&clip===current().paragraphs.length-1){seekTo(0,false);}
     const version=loadVersion;

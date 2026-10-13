@@ -6,7 +6,8 @@
   <meta name="description" content="丁洁的商业空间与室内设计作品集。听我讲，也可以自己逛。">
   <title>丁洁 · 空间有戏 / Spaces in Play</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="stage.css">
+  <link rel="stylesheet" href="stage.css?v=space-2">
+  <link rel="stylesheet" href="space.css?v=space-2">
 </head>
 <body data-kind="about">
   <svg class="definitions" aria-hidden="true"><defs><filter id="chalk"><feTurbulence type="fractalNoise" baseFrequency=".64" numOctaves="3" seed="7" result="grain"/><feColorMatrix in="grain" type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 3 -.55" result="mask"/><feComposite in="SourceGraphic" in2="mask" operator="in"/></filter></defs></svg>
@@ -34,6 +35,7 @@
     <div id="outro" class="outro" hidden><p>让想法进入空间，<br>把关系想清楚。</p><a href="mailto:1161337508@qq.com">1161337508@qq.com ↗</a><a href="assets/portfolio.pdf" download="丁洁_作品集.pdf">完整作品集 PDF ↓</a></div>
     <div id="welcome" class="welcome"><button id="start">▶ 听我讲<span>LET'S PLAY</span></button><button id="browse">自己逛逛 ↗</button><small>13个讲述单元 · 中文声音</small></div>
     <p id="caption" class="caption"></p>
+    <div id="walker" aria-label="在数字空间里讲解的丁洁" hidden><div class="foot-shadow"></div><canvas id="walkingCast"></canvas></div>
   </main>
   <footer>
     <button id="play" aria-label="播放或暂停">▶ <span>PLAY</span></button>
@@ -47,6 +49,6 @@
   <dialog id="chapters"><button class="close" aria-label="关闭作品目录">×</button><h2>随便逛逛。</h2><p>选一个空间，也可以从头听我讲。</p><ol id="chapterList"></ol><a href="assets/portfolio.pdf" download>完整作品集 PDF ↓</a></dialog>
   <dialog id="lightbox"><button class="close" aria-label="关闭大图">×</button><img id="largeImage" alt="作品图面放大"><p id="largeLabel"></p></dialog>
   <audio id="voice" preload="metadata"></audio>
-  <script src="content.js"></script><script src="stage.js"></script>
+  <script src="content.js?v=space-3"></script><script src="space.js?v=space-3"></script><script src="stage.js?v=space-3"></script>
 </body>
 </html>
