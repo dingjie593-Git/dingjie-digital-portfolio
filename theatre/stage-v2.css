@@ -28,3 +28,5 @@ body[data-kind=opening] #margin{display:none!important}
 body[data-kind=opening] h1{font-family:Marker;letter-spacing:0}
 footer #prev{margin-left:auto}
 @media(max-width:800px){footer{height:62px;padding:0 3%}#world{height:calc(100svh - 62px)}footer #prev{margin-left:0}#status{bottom:73px}}
+body[data-kind=opening] h1{font-size:clamp(46px,5.2vw,78px)}
+@media(max-width:800px){body[data-kind=opening] h1{font-size:40px}}
