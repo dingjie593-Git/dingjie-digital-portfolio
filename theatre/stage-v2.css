@@ -54,3 +54,13 @@ body[data-kind=opening] .english{font-size:clamp(19px,1.2vw,30px)}body[data-kind
 nav #full{display:flex}
 @media(min-width:801px){#career{height:clamp(260px,30vh,420px)}}
 @media(max-width:800px){nav #language,nav #mute,nav #full{min-width:44px}nav{gap:4px}}
+
+/* The existing ground stroke doubles as the discreet whole-show timeline. */
+#captionBar{border-top:0}
+#subtitles{transform:translateY(-16px)}
+#ground{z-index:26;overflow:visible}
+#stageProgress{position:absolute;left:0;top:-20px;width:100%;height:44px;margin:0;padding:0;opacity:0;cursor:pointer;touch-action:none}
+#progressDot{position:absolute;left:0;top:50%;width:10px;height:10px;background:#9daf79;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none}
+body[data-theme=paper] #progressDot{background:#82945e}
+#ground:focus-within #progressDot{outline:2px solid #a6b88480;outline-offset:3px}
+@media(max-width:800px){#subtitles{transform:translateY(-12px)}}

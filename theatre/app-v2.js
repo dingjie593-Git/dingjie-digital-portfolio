@@ -1,15 +1,16 @@
 (() => {
  'use strict';const $=id=>document.getElementById(id),scenes=window.STORY,voice=$('voice'),reduced=matchMedia('(prefers-reduced-motion: reduce)');
  let page=0,beat=0,unlocked=false,playing=false,mode='browse',flow=true,version=0,raf=0,seeking=false,wheel=0,wheelStamp=0,flipStamp=0,timer=0,language='both',loading=false,modalResume=false,starting=false,launch=0;
+ const sceneOffsets=[];let totalTime=0;for(const s of scenes){sceneOffsets.push(totalTime);totalTime+=s.duration}let scrubResume=false,scrubbing=false;const progress=$('stageProgress');progress.max=String(totalTime);
  const scene=()=>scenes[page],stamp=t=>`${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;
  function tell(t){$('status').textContent=t;$('status').hidden=false;clearTimeout(timer);timer=setTimeout(()=>$('status').hidden=true,4200)}
  function controls(){for(const id of ['performer','poster'])$(id).setAttribute('aria-label',playing?'暂停讲述':'继续讲述')}
  function caption(){const t=voice.currentTime,p=scene();beat=0;while(beat<3&&t>=p.beats[beat].end)beat++;const b=p.beats[beat],line=p.subtitles.find(x=>t>=x.start&&t<x.end)||p.subtitles.filter(x=>x.start<=t).at(-1)||p.subtitles[0];$('caption').textContent=line?.cn||b.cn;$('translation').textContent=b.en;$('note').textContent=b.note;
   [...$('beatIndex').children].forEach((el,i)=>{el.classList.toggle('active',i===beat);el.setAttribute('aria-current',String(i===beat))});}
- let switchKey='';function render(){if(!scene())return;caption();window.director.render({time:voice.currentTime,playing,mode,unlocked,seeking,reduced:reduced.matches});
+ let switchKey='';function render(){if(!scene())return;caption();if(!scrubbing){const t=sceneOffsets[page]+voice.currentTime;progress.value=String(t);$('progressDot').style.left=`${t/totalTime*100}%`;progress.setAttribute('aria-valuetext',`整场进度 ${Math.round(t/totalTime*100)}%，第${page+1}幕`)}window.director.render({time:voice.currentTime,playing,mode,unlocked,seeking,reduced:reduced.matches});
   const ids=scene().beats[beat].images,show=innerWidth<=800&&ids.length>1&&scene().kind!=='ending';$('imageSwitch').hidden=!show;const k=`${page}:${beat}:${show}`;
   if(k!==switchKey){switchKey=k;$('imageSwitch').replaceChildren();if(show)ids.forEach((n,i)=>{const b=document.createElement('button');b.textContent=scene().kind==='compare'?(n===59?'原始 33':'方案 48'):String(i+1)+' / '+ids.length;b.setAttribute('aria-label','查看本段图纸：'+ART_LABELS[n]);b.onclick=()=>{pause();mode='browse';$('subtitles').hidden=true;director.selectImage(i);render()};$('imageSwitch').append(b)})}
-  $('imageSwitch').style.top=`${innerWidth<=800?worldHeight()*.96-26:0}px`;
+  $('imageSwitch').style.top=`${innerWidth<=800?worldHeight()*.96-72:0}px`;
  }
  function worldHeight(){return $('world').offsetHeight}
  function tick(){render();if(playing)raf=requestAnimationFrame(tick)}
@@ -27,6 +28,11 @@
  }
  function seek(t,resume=playing){const v=version,time=Math.max(0,Math.min(t,scene().duration-.02));seeking=true;
   const apply=()=>{if(v!==version)return;voice.currentTime=time;render();if(resume&&!playing)play()};if(voice.readyState>=1)apply();else voice.addEventListener('loadedmetadata',apply,{once:true});}
+ function seekGlobal(value,resume=false){const t=Math.max(0,Math.min(Number(value),totalTime-.02));let n=0;while(n<scenes.length-1&&t>=sceneOffsets[n+1])n++;unlocked=true;mode='show';if(n!==page)go(n,false);$('welcome').hidden=true;$('subtitles').hidden=false;seek(t-sceneOffsets[n],resume)}
+ progress.addEventListener('pointerdown',()=>{scrubResume=playing||starting;pause();scrubbing=true});
+ progress.addEventListener('input',()=>{const t=Number(progress.value);if(!scrubbing){scrubResume=playing||starting;pause();scrubbing=true;progress.value=String(t)}$('progressDot').style.left=`${t/totalTime*100}%`;seekGlobal(t,false)});
+ progress.addEventListener('change',()=>{const t=Number(progress.value),resume=scrubResume;scrubbing=false;scrubResume=false;seekGlobal(t,resume)});
+ progress.addEventListener('pointercancel',()=>{scrubbing=false;if(scrubResume)play();scrubResume=false});
  function openCatalog(){modalResume=playing;pause();$('catalog').showModal()}
  function openDetails(){modalResume=playing;pause();$('detailTitle').textContent=scene().project;$('detailScope').textContent=scene().scope;$('gallery').replaceChildren();
   for(const n of scene().gallery){const f=document.createElement('figure');f.className='sheet';const b=document.createElement('button');b.className='image';b.setAttribute('aria-label','放大原图：'+ART_LABELS[n]);const img=new Image();img.src=`assets/work-${n}.webp`;img.alt=ART_LABELS[n];b.append(img);b.onclick=()=>openImage(n,true);const c=document.createElement('figcaption');c.textContent=ART_LABELS[n];f.append(b,c);$('gallery').append(f)}
