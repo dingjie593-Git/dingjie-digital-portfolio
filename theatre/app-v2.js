@@ -31,7 +31,8 @@
  function seekGlobal(value,resume=false){const t=Math.max(0,Math.min(Number(value),totalTime-.02));let n=0;while(n<scenes.length-1&&t>=sceneOffsets[n+1])n++;unlocked=true;mode='show';if(n!==page)go(n,false);$('welcome').hidden=true;$('subtitles').hidden=false;seek(t-sceneOffsets[n],resume)}
  progress.addEventListener('pointerdown',()=>{scrubResume=playing||starting;pause();scrubbing=true});
  progress.addEventListener('input',()=>{const t=Number(progress.value);if(!scrubbing){scrubResume=playing||starting;pause();scrubbing=true;progress.value=String(t)}$('progressDot').style.left=`${t/totalTime*100}%`;seekGlobal(t,false)});
- progress.addEventListener('change',()=>{const t=Number(progress.value),resume=scrubResume;scrubbing=false;scrubResume=false;seekGlobal(t,resume)});
+ function finishScrub(){if(!scrubbing)return;const t=Number(progress.value),resume=scrubResume;scrubbing=false;scrubResume=false;seekGlobal(t,resume)}
+ progress.addEventListener('change',finishScrub);progress.addEventListener('pointerup',()=>setTimeout(finishScrub,0));
  progress.addEventListener('pointercancel',()=>{scrubbing=false;if(scrubResume)play();scrubResume=false});
  function openCatalog(){modalResume=playing;pause();$('catalog').showModal()}
  function openDetails(){modalResume=playing;pause();$('detailTitle').textContent=scene().project;$('detailScope').textContent=scene().scope;$('gallery').replaceChildren();
