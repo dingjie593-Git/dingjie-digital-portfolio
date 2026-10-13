@@ -78,9 +78,9 @@
       root.dataset.air=String(a.air||false);route=null;platforms().forEach(p=>p.element.classList.toggle('selected',support===p.id));
     }else{
       const goal=target(s);support='ground';root.dataset.air='false';
-      if(!route||route.key!==goal.key){route={key:goal.key,from:{...current},to:goal.point,start:s.time,travel:clamp(Math.abs(current.x-goal.point.x)*7,1,3.3),rect:goal.rect};if(s.time>.7){route.from={...goal.point};route.start=0;}}
+      if(!route||route.key!==goal.key){const distance=Math.abs(current.x-goal.point.x);route={key:goal.key,from:{...current},to:goal.point,start:s.time,travel:distance<.008?0:clamp(distance*7,1,3.3),rect:goal.rect};if(s.time>.7){route.from={...goal.point};route.start=0;}}
       if(jumped){route.from={...goal.point};route.to=goal.point;route.start=0;route.rect=goal.rect;}
-      const u=s.reduced?1:clamp((s.time-route.start)/route.travel,0,1);point={x:mix(route.from.x,route.to.x,ease(u)),y:floor()/innerHeight};
+      const u=s.reduced||route.travel===0?1:clamp((s.time-route.start)/route.travel,0,1);point={x:mix(route.from.x,route.to.x,ease(u)),y:floor()/innerHeight};
       moving=u<1;facing=route.to.x>=route.from.x?1:-1;frame=moving?Math.floor(s.pageTime*8)%6:goal.pose;mode=moving?'walk':'gesture';
       if(!moving&&goal.focus){
         goal.focus.classList.add('space-focus');
