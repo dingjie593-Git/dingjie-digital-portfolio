@@ -21,6 +21,10 @@ Continuous narration, bilingual captions, whole-show seeking on the original thi
 
 Desktop arrows / mouse wheel and mobile vertical swipes change chapter. Space or the presenter pauses/resumes narration. The subtitle area contains no extra player toolbar. Cover WORKS and PLAY INTRO are accessible real button hotspots aligned to the selected art.
 
+### Foreground and label correction
+
+`contours-v5.js` traces the frame apertures and paper/clay occlusions in the original 1672×941 approved plates. A second copy of each unchanged plate forms the foreground through an SVG even-odd contour, retaining pins, labels, curved frame edges and decorations above the real photographs. The Dongji detail card also has a complete paper support layer, preventing multiply-blended diagrams from revealing the main photograph underneath. The former rectangular notch clips are removed. Label angles follow their individual paper/clay backings; several labels were also recentered onto the proper plaques. On mobile the established single-image clay frame remains independent of these desktop contours.
+
 ## Validation
 
 All ten scenes were visually checked at 1440×900 and 390×844, with an additional wide desktop check. Browser checks covered a real cover Play Intro click, all nine automatic chapter transitions by seeking to chapter ends, catalog selection, original-image and notebook dialogs, global seek, mute, subtitle language, and mobile image selection. No page errors or mobile horizontal overflow were observed.
