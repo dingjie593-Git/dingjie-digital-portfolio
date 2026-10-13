@@ -38,8 +38,9 @@
     if(p.kind==='compare'){
       art.classList.add('comparison');
       const a=addFigure(0,{number:33}),b=addFigure(1,{number:48});
-      if(k===0){b.classList.add('muted');}else if(k>=1){b.classList.add('selected');}
-      if(k>=2)$('actionLabel').textContent='看看这些停留节点。';
+      if(k<=1){b.classList.add('muted');if(k===1)a.classList.add('selected');}else {b.classList.add('selected');}
+      if(k>=3)$('actionLabel').textContent='舞台、展览，让路径有停留。';
+      if(k===2)b.classList.add('entering-plan');
       return;
     }
     if(p.kind==='study'){
@@ -87,7 +88,9 @@
     const textLength=sentences.reduce((n,s)=>n+s.length,0),textPosition=progress*textLength;
     let sentenceIndex=0,passed=0;
     while(sentenceIndex<sentences.length-1&&passed+sentences[sentenceIndex].length<textPosition){passed+=sentences[sentenceIndex].length;sentenceIndex++;}
-    $('caption').textContent=unlocked?sentences[sentenceIndex]:'';
+    const timedCues=p.cues?.[clip];
+    const timedCaption=timedCues?.find(c=>t>=c.start&&t<c.end)?.text||timedCues?.[timedCues.length-1]?.text;
+    $('caption').textContent=unlocked?(timedCaption||sentences[sentenceIndex]):'';
     $('seek').max=total();$('seek').value=position();$('clock').textContent=`${stamp(position())} / ${stamp(total())}`;
     let frame=0,shift=0,scale=1,turn=0,pull=0;
     if(unlocked){
@@ -97,7 +100,17 @@
       else if(clip%3===1){frame=progress<.12?1:progress<.3?3:progress>.9?6:4;pull=Math.sin(Math.min(progress/.3,1)*Math.PI/2);shift=-pull*12;scale=1+pull*.025;}
       else if(clip%3===2){frame=progress<.13?1:5;turn=-1;shift=-7;}
       else {frame=progress<.15?6:progress<.4?4:7;turn=progress<.4?-1:1;}
-      if(clip===p.paragraphs.length-1&&progress>.83){frame=7;pull=0;shift=0;turn=1;}
+      // Fuzhou is a rehearsed 25-second scene: gesture follows the comparison and the actual sentence pauses.
+      if(p.kind==='compare'){
+        if(clip===0){frame=t<.7?0:1;shift=0;turn=-1;pull=0;}
+        else if(clip===1){frame=t<.5?1:4;shift=-8;turn=-1;pull=0;}
+        else if(clip===2){frame=t<1.4?3:4;shift=-14;scale=1.025;turn=-1;pull=t<1.4?Math.min(t/1.4,1):0;}
+        else {frame=t<5.9?5:4;shift=-5;turn=t<5.9?-1:0;pull=0;}
+        const proposed=art.querySelector('figure:nth-child(2)');
+        proposed?.classList.toggle('marked',clip>=3||(clip===2&&t>=5));
+        paper.dataset.beat=clip===0?'overview':clip===1?'original':clip===2?'proposed':'nodes';
+      }
+      if(clip===p.paragraphs.length-1&&progress>.92){frame=7;pull=0;shift=0;turn=1;}
     }
     if(reduced.matches){frame=0;shift=0;scale=1;turn=0;pull=0;}
     const steppedShift=Math.round(shift/2)*2;
