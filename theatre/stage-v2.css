@@ -23,3 +23,8 @@ dialog{background:#f4ecd9;color:#303729;border:2px solid #53583b;border-radius:7
 #career small,#career strong,#career span{position:absolute;left:4px;right:0;margin:0}#career small{top:calc(100% + 10px)}#career strong{top:calc(100% + 30px)}#career span{top:calc(100% + 64px)}
 @media(max-width:800px){#career small{left:0;top:calc(100% + 8px)}#career strong{left:0;top:calc(100% + 22px)}#career span{display:none}}
 body[data-kind=opening] #margin{display:none!important}
+
+/* About Me: quiet chapter controls without a video timeline. */
+body[data-kind=opening] h1{font-family:Marker;letter-spacing:0}
+footer #prev{margin-left:auto}
+@media(max-width:800px){footer{height:62px;padding:0 3%}#world{height:calc(100svh - 62px)}footer #prev{margin-left:0}#status{bottom:73px}}

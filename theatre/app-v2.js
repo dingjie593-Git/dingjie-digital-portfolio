@@ -1,6 +1,6 @@
 (() => {
  'use strict';const $=id=>document.getElementById(id),scenes=window.STORY,voice=$('voice'),reduced=matchMedia('(prefers-reduced-motion: reduce)');
- let page=0,beat=0,unlocked=false,playing=false,mode='browse',flow=false,version=0,raf=0,seeking=false,wheel=0,wheelStamp=0,flipStamp=0,timer=0,language='both',loading=false;
+ let page=0,beat=0,unlocked=false,playing=false,mode='browse',flow=true,version=0,raf=0,seeking=false,wheel=0,wheelStamp=0,flipStamp=0,timer=0,language='both',loading=false;
  const scene=()=>scenes[page],stamp=t=>`${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;
  function tell(t){$('status').textContent=t;$('status').hidden=false;clearTimeout(timer);timer=setTimeout(()=>$('status').hidden=true,4200)}
  function controls(){ $('play').textContent=playing?'Ⅱ':'▶';$('play').setAttribute('aria-label',playing?'暂停讲解':'播放讲解');$('prev').disabled=page===0;$('next').disabled=page===9;$('chapterButton').textContent=`${String(page+1).padStart(2,'0')} / 10`;$('flow').textContent=flow?'连播':'逐幕';$('flow').setAttribute('aria-pressed',String(flow)); }
