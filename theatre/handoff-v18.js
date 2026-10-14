@@ -18,7 +18,7 @@ function sample(type,u,start,end){
  }
  const travel=type==='slide'?q(u,.05,.95):arrive;
  const pose={...end,x:mix(start.x,end.x,travel),y:mix(start.y,end.y,travel),frame,face:tip?1:type==='slide'?(end.x>=start.x?1:-1):-1,
-  walkDistance:distance*travel,action:type==='slide'?'walk':'pageGesture',perch:false,poseBlend:0,lean:0,lag:0,squash:1,turnScale:1,alpha:1,carryOverride:null,screenContact:null,screenSupport:null,
+  walkDistance:distance*travel,walkEnvelope:Math.min(q(u,0,.12),1-q(u,.88,1)),action:type==='slide'?'walk':'pageGesture',perch:false,poseBlend:0,lean:0,lag:0,squash:1,turnScale:1,alpha:1,carryOverride:null,screenContact:null,screenSupport:null,
   acting:{phase,transition:type},time:0};
  // Never drift a braced pair of feet during contact and exertion.
  if(type!=='slide'&&u<.82){pose.x=start.x;pose.y=start.y}

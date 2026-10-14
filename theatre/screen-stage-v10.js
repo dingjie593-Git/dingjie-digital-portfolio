@@ -44,7 +44,7 @@ for(let i=1;i<=8;i++){
 }
 PERFORMANCE_SCORE[1].transition='push';
 for(const [i,name] of [[1,'关闭屏幕，进入下一组作品'],[2,'从故事屏进入楼层'],[5,'从平面节点进入空间'],[7,'从作品进入表达能力'],[8,'退出展示，向观众致谢']]){PERFORMANCE_HANDOFFS[i].name=name;PERFORMANCE_HANDOFFS[i].note='屏幕内容归位后换景，人物留在舞台上继续引导。';}
-window.DIRECTOR_EDITION='v18 / 交替步态与人物触发转场';
+window.DIRECTOR_EDITION='v19 / 固定人物与连续骨骼步态';
 
 function setImage(im,n){const src=`assets/work-${n}.webp`;if(im.getAttribute('src')!==src)im.src=src;im.alt=ART_LABELS[n]||'';}
 function paintImages(container,a,b,s,reduced,diagram,readingMetrics=null){
@@ -79,7 +79,7 @@ function operator(i,t,p,hand){
  if(i===0&&window.INTRO_GUIDE&&t<INTRO_GUIDE.duration){
   const g=INTRO_GUIDE,step=g.steps.findIndex(s=>t>=s.start&&t<s.end),j=Math.max(0,step),elapsed=t-g.steps[j].start,settle=q(t,g.duration-.7,g.duration);
   const face=j<2?1:-1,frame=t>g.duration-.7?300+walkGait.frame(80*settle):elapsed<.35?202:elapsed<2?(j===2?209:203):200;
-  return {...p,action:t>g.duration-.7?'walk':'listen',walkDistance:80*settle,x:mix(1150,1070,settle),y:900,frame,face,alpha:q(t,0,.35),poseBlend:0,lean:0,lag:0,squash:1,perch:false,acting:{phase:'guide',step:j}};
+  return {...p,action:t>g.duration-.7?'walk':'listen',walkDistance:80*settle,walkEnvelope:Math.min(q(t,g.duration-.7,g.duration-.55),1-q(t,g.duration-.15,g.duration)),x:mix(1150,1070,settle),y:900,frame,face,alpha:q(t,0,.35),poseBlend:0,lean:0,lag:0,squash:1,perch:false,acting:{phase:'guide',step:j}};
  }
  if(i===0||i===9||!cues[i].length)return p;
  const events=[];for(const c of cues[i]){events.push(c);if(c.kind==='tap')events.push({...c,at:c.end,kind:'close',duration:.22,opened:c})}events.sort((a,b)=>a.at-b.at);
@@ -93,7 +93,7 @@ function operator(i,t,p,hand){
   const budget=Math.max(.045,gap-needed);a.tail=Math.min(a.tail,budget*.45);b.lead=Math.min(b.lead,budget*.55);
  }
  const nodes=[{at:0,x:home(i,0),y:900}];
- const travel=(a,b)=>Math.max(.75,Math.hypot(a.x-b.x,a.y-b.y)/360*1.5);
+ const travel=(a,b)=>Math.max(.75,Math.hypot(a.x-b.x,a.y-b.y)/300*1.5);
  for(const c of contacts){
   const prev=nodes.at(-1),arrival=c.at-c.lead,gap=arrival-prev.at,rest={x:home(i,(prev.at+arrival)/2),y:900};
   const back=travel(prev,rest),forth=travel(rest,c);
@@ -106,7 +106,7 @@ function operator(i,t,p,hand){
  for(let j=1;j<nodes.length;j++){if(t<=nodes[j].at){left=nodes[j-1];right=nodes[j];break}left=nodes[j]}
  const linear=clamp((t-left.at)/Math.max(.01,right.at-left.at)),ramp=.16,cruise=linear<ramp?linear*linear/(2*ramp*(1-ramp)):linear>1-ramp?1-(1-linear)**2/(2*ramp*(1-ramp)):(linear-ramp/2)/(1-ramp);
  const u=cruise,distance=Math.hypot(right.x-left.x,right.y-left.y),moving=distance>.1&&t<right.at;
- out={...out,walkDistance:distance*u,x:mix(left.x,right.x,u),y:mix(left.y,right.y,u),action:moving?'walk':'listen',frame:moving?300+walkGait.frame(distance*u):200,face:moving?(right.x>=left.x?1:-1):-1};
+ out={...out,walkDistance:distance*u,walkEnvelope:Math.min(q(t,left.at,left.at+.16),1-q(t,right.at-.2,right.at)),x:mix(left.x,right.x,u),y:mix(left.y,right.y,u),action:moving?'walk':'listen',frame:moving?300+walkGait.frame(distance*u):200,face:moving?(right.x>=left.x?1:-1):-1};
  // Feet stay planted during preparation, touch and recovery; only the arm/torso acts.
  const c=contacts.find(c=>t>=c.at-c.lead&&t<=c.at+c.duration+c.tail);
  if(c){
@@ -142,7 +142,7 @@ function operator(i,t,p,hand){
   const anchor=operator(i,34.899,p,hand),arrival=q(t,34.9,38.5),depart=q(t,44.95,STORY[8].duration-.45),x=t<44.95?mix(anchor.x,1050,arrival):mix(1050,1450,depart);
   const traveling=t<38.5||t>=44.95&&depart<1,pointing=t>=39.1&&t<44.55;
   const frame=traveling?300+walkGait.frame(t<38.5?Math.abs(anchor.x-1050)*arrival:400*depart):t<39.1?400:pointing?410:t<44.95?411:200;
-  out={...out,walkDistance:t<38.5?Math.abs(anchor.x-1050)*arrival:400*depart,x,y:t<38.5?mix(anchor.y,900,arrival):900,frame,face:t>=44.95&&depart<1?1:-1,lean:0,lag:0,squash:1,turnScale:1,poseBlend:0,screenContact:null,screenSupport:null,action:pointing?'pointLinks':traveling?'walk':'listen',acting:{phase:pointing?'pointLinks':traveling?'travel':'recover'}};
+  out={...out,walkEnvelope:t<38.5?Math.min(q(t,34.9,35.06),1-q(t,38.3,38.5)):Math.min(q(t,44.95,45.11),1-q(t,STORY[8].duration-.65,STORY[8].duration-.45)),walkDistance:t<38.5?Math.abs(anchor.x-1050)*arrival:400*depart,x,y:t<38.5?mix(anchor.y,900,arrival):900,frame,face:t>=44.95&&depart<1?1:-1,lean:0,lag:0,squash:1,turnScale:1,poseBlend:0,screenContact:null,screenSupport:null,action:pointing?'pointLinks':traveling?'walk':'listen',acting:{phase:pointing?'pointLinks':traveling?'travel':'recover'}};
  }
  return out;
 }

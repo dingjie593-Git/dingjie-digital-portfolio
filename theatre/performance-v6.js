@@ -23,7 +23,8 @@ const context=canvas.getContext('2d'),atlases=[
  {src:'assets/identity-v17/screen.webp',rows:3,count:12,manifest:'assets/identity-v17/screen-regions.json'},
  {src:'assets/acting-v18/walk.webp',rows:2,count:8,manifest:'assets/acting-v18/walk-regions.json'},
  null,{src:'assets/identity-v17/point.webp',rows:1,count:1,manifest:'assets/identity-v17/point-regions.json'},
- {src:'assets/acting-v18/turn-push.webp',rows:2,count:8,manifest:'assets/acting-v18/turn-push-regions.json'}];
+ {src:'assets/acting-v18/turn-push.webp',rows:2,count:8,manifest:'assets/acting-v18/turn-push-regions.json'},
+ {src:'assets/acting-v19/basic-closed.webp',rows:1,count:1,manifest:'assets/acting-v19/basic-closed-regions.json'}];
 let page=0,previous=null,enabled=false,loaded=false,transitioning=false,transitionId=0,state={},lastRender=null,photoNodes=[];
 // Use the connected alpha component of each tile, excluding atlas noise.
 function bounds(data,w,h){const seen=new Uint8Array(w*h),queue=new Int32Array(w*h);let best={area:0,l:0,r:0,u:0,b:0};for(let n=0;n<w*h;n++){if(seen[n]||data[n*4+3]<100)continue;let head=0,tail=1,l=w,r=0,u=h,b=0;queue[0]=n;seen[n]=1;while(head<tail){const z=queue[head++],x=z%w,y=Math.floor(z/w);l=Math.min(l,x);r=Math.max(r,x);u=Math.min(u,y);b=Math.max(b,y);for(const next of [x?z-1:-1,x<w-1?z+1:-1,y?z-w:-1,y<h-1?z+w:-1])if(next>=0&&!seen[next]&&data[next*4+3]>=100){seen[next]=1;queue[tail++]=next}}if(tail>best.area)best={area:tail,l,r,u,b}}best.cx=(best.l+best.r)/2;let sum=0,total=0;for(let y=Math.floor(best.b-(best.b-best.u)*.1);y<=best.b;y++)for(let x=best.l;x<=best.r;x++){const alpha=data[(y*w+x)*4+3];if(alpha>100){sum+=x*alpha;total+=alpha}}best.footX=total?sum/total:best.cx;sum=0;total=0;for(let y=Math.floor(best.u+(best.b-best.u)*.52);y<=Math.floor(best.u+(best.b-best.u)*.64);y++)for(let x=best.l;x<=best.r;x++){const alpha=data[(y*w+x)*4+3];if(alpha>100){sum+=x*alpha;total+=alpha}}best.hipX=total?sum/total:best.cx;return best}
@@ -34,7 +35,7 @@ const prepared=Promise.all(atlases.map(async a=>{
  a.regions=a.manifest?await fetch(a.manifest).then(r=>{if(!r.ok)throw Error('Missing sprite regions');return r.json()}):Array.from({length:a.count},(_,i)=>[i%4*a.w,Math.floor(i/4)*a.h,a.w,a.h]);
  const c=document.createElement('canvas'),ctx=c.getContext('2d',{willReadFrequently:true});a.boxes=[];if(a.src.includes('/screen.webp'))a.nativeFaces=[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1];if(a.src.includes('/point.webp'))a.nativeFaces=[-1];
  for(const [x,y,w,h] of a.regions){c.width=w;c.height=h;ctx.drawImage(a.image,x,y,w,h,0,0,w,h);a.boxes.push(bounds(ctx.getImageData(0,0,w,h).data,w,h))}
-})).then(()=>{loaded=true;window.dispatchEvent(new Event('castready'))});
+})).then(async()=>{await walkMotion.prepare();loaded=true;window.dispatchEvent(new Event('castready'))});
 const frames={look:6,present:10,nod:11,reach:100,brace:400,climb:102,balance:103,touch:104,recoil:105,sit:106,grasp:107,pull:404,push:402,dust:110,wave:111,inspect:11,front:6,listen:6,point:8,hold:9};
 const flips=[1,1,1,1,-1,1,1,1,-1,-1,1,-1],basicFacing=[1,1,1,1,1,1,1,1,-1,1,1,-1];
 function businessAt(scene,time){
@@ -66,13 +67,14 @@ function rawPose(scene,time){
  const frame=action==='walk'?300+walkGait.frame(walkDistance):frames[action];
  const prev=route[Math.max(0,index-1)],blend=action!=='walk'&&prev.action!==action&&!['sit','climb'].includes(action)&&!['sit','walk','climb'].includes(prev.action)?1-q(time,a.t,a.t+.1):0;
  const appear=score[scene].appear,alpha=appear?q(time,appear[0],appear[1]):1;
- const pose={walkDistance,x:mix(a.x,b.x,u)+m.dx,y:(crossingSeat?a.y:mix(a.y,b.y,u))+m.dy+(appear?(1-alpha)*65:0),action,face,frame,perch:action==='sit',time,lean:m.lean,lag:m.lag,squash:m.squash,alpha,previousFrame:frames[prev.action],poseBlend:blend};return window.screenStage?.pose(scene,time,pose,hand)||pose;
+ const pose={walkDistance,walkEnvelope:Math.min(q(time,a.t,a.t+.16),1-q(time,b.t-.2,b.t)),x:mix(a.x,b.x,u)+m.dx,y:(crossingSeat?a.y:mix(a.y,b.y,u))+m.dy+(appear?(1-alpha)*65:0),action,face,frame,perch:action==='sit',time,lean:m.lean,lag:m.lag,squash:m.squash,alpha,previousFrame:frames[prev.action],poseBlend:blend};return window.screenStage?.pose(scene,time,pose,hand)||pose;
 }
 const basicAliases=[300,301,302,303,304,305,0,4,203,1,207,7],actingAliases=[203,400,408,409,204,405,407,400,404,402,2,202];
 function anatomy(p){
  let canonical=p.action==='walk'&&Number.isFinite(p.walkDistance)?300+walkGait.frame(p.walkDistance):p.frame<100?basicAliases[p.frame]:p.frame<200?actingAliases[p.frame-100]:p.frame;if(canonical>=400&&canonical<500)canonical=[202,206,207,207,209,209,211,200,303,211,500,209][canonical-400];
+ if(canonical===4)canonical=700;
  const bank=Math.floor(canonical/100),a=atlases[bank],i=canonical%100,b=a.boxes[i],ref=a.boxes[0];
- const scale=342/(ref.b-ref.u),native=a.nativeFaces?.[i]??(bank===2?-1:1),face=p.face*native,anchor=p.perch?b.u+(b.b-b.u)*.64:b.b,cx=bank===6?b.footX:bank>=3?b.hipX:b.footX;
+ const scale=342/(ref.b-ref.u),native=a.nativeFaces?.[i]??(bank===2?-1:1),face=p.face*native,anchor=p.perch?b.u+(b.b-b.u)*.64:b.b,cx=bank===6||bank===7?b.footX:bank>=3?b.hipX:b.footX;
  return {bank,a,i,b,scale,face,anchor,cx};
 }
 function hand(p){const {bank,i,b,scale,face,anchor,cx}=anatomy(p),x=bank===5?.02:bank===4?[.8,.95,.98,.98,.94,.8,.55,.5,.8,.8,.98,.65][i]:bank===3?.8:bank===2?[.3,.3,.08,.02,.02,.02,.02,.02,.25,.25,.3,.8][i]:.7,y=bank===5?.54:bank===4?[.31,.28,.27,.27,.29,.32,.52,.6,.3,.4,.69,.49][i]:bank===3?.48:bank===2?[.61,.61,.27,.10,.015,.14,.33,.33,.30,.34,.61,.63][i]:.5;return {x:(b.l+(b.r-b.l)*x-cx)*scale*face,y:(b.u+(b.b-b.u)*y-anchor)*scale}}
@@ -101,10 +103,11 @@ function supportAt(t,p){const c=window.screenStage?.support(p)||score[page].supp
  context.fillStyle='#37261312';for(let i=0;i<65;i++){const xx=x+12+(i*47%Math.max(1,w-24)),yy=top+16+(i*31%Math.max(1,h-24));context.beginPath();context.ellipse(xx,yy,.8+(i%3)*.3,.7,0,0,Math.PI*2);context.fill()}context.restore();
 }
 function paintPose(p,alpha=1){
+ if(p.action==='walk'&&Number.isFinite(p.walkDistance)&&walkMotion.draw(context,p,alpha))return;
  const {a,i,b,scale,face,anchor,cx}=anatomy(p),sx=a.regions[i][0]+b.l,sy=a.regions[i][1]+b.u,sw=b.r-b.l+1,sh=b.b-b.u+1;
  context.save();context.globalAlpha*=alpha;context.translate(p.x,p.y);context.scale(face*(p.turnScale??1),p.squash||1);
- const walking=p.action==='walk'&&Number.isFinite(p.walkDistance),strips=walking?64:Math.abs(p.lean||0)+Math.abs(p.lag||0)>.05?24:1;
- for(let j=0;j<strips;j++){const v=j/strips,v2=(j+1)/strips,dy=(b.u+sh*v-anchor)*scale,dh=sh/strips*scale+.5,offset=((p.lean||0)*(1-v)**2+(p.lag||0)*(1-v)**4)*face+(walking?walkGait.offset(p.walkDistance,i,cx,scale)*clamp((v-.59)/.34):0);
+ const strips=Math.abs(p.lean||0)+Math.abs(p.lag||0)>.05?24:1;
+ for(let j=0;j<strips;j++){const v=j/strips,v2=(j+1)/strips,dy=(b.u+sh*v-anchor)*scale,dh=sh/strips*scale+.5,offset=((p.lean||0)*(1-v)**2+(p.lag||0)*(1-v)**4)*face;
   context.drawImage(a.image,sx,sy+sh*v,sw,Math.min(sh/strips+1,sh-sh*v),(b.l-cx)*scale+offset,dy,sw*scale,dh);
  }
  context.restore();
@@ -114,16 +117,16 @@ function draw(p){
  if(p.action==='walk'&&Number.isFinite(p.walkDistance))p={...p,frame:300+walkGait.frame(p.walkDistance)};
  // Guard the complete silhouette at stage edges, including transition gestures.
  const shape=anatomy(p),stretch=p.turnScale??1,lo=(shape.face>0?shape.b.l-shape.cx:shape.cx-shape.b.r)*shape.scale*stretch,hi=(shape.face>0?shape.b.r-shape.cx:shape.cx-shape.b.l)*shape.scale*stretch;
- const lowerShift=p.action==='walk'&&Number.isFinite(p.walkDistance)?walkGait.offset(p.walkDistance,shape.i,shape.cx,shape.scale)*shape.face:0;
- const guardedX=Math.max(18-lo-Math.min(0,lowerShift),Math.min(W-18-hi-Math.max(0,lowerShift),p.x));if(guardedX!==p.x){const dx=guardedX-p.x;p={...p,x:guardedX,edgeGuard:true};if(p.screenContact)p.screenContact={...p.screenContact,target:{x:p.screenContact.target.x+dx,y:p.screenContact.target.y}}}
+ const guardedX=Math.max(18-lo,Math.min(W-18-hi,p.x));if(guardedX!==p.x){const dx=guardedX-p.x;p={...p,x:guardedX,edgeGuard:true};if(p.screenContact)p.screenContact={...p.screenContact,target:{x:p.screenContact.target.x+dx,y:p.screenContact.target.y}}}
 
 
  if(!p.reduced)supportAt(p.time||0,p);context.save();context.globalAlpha=p.alpha??1;
  context.fillStyle=page===0||page===3||page===9?'#30352350':'#67583e35';context.beginPath();context.ellipse(p.x,p.perch?900:p.y+1,p.perch?28:46,7,0,0,Math.PI*2);context.fill();
  const f=p.poseBlend||0;if(f>.001)paintPose({...p,frame:p.previousFrame},f);paintPose(p,1-f);
  const card=p.carryOverride===undefined?carryAt(page,p.time||0,p):p.carryOverride;paperCard(card);context.restore();
- const {b,scale,face,anchor,cx,i}=anatomy(p),lean=Math.abs(p.lean||0)+Math.abs(p.lag||0),shift=p.action==='walk'&&Number.isFinite(p.walkDistance)?walkGait.offset(p.walkDistance,i,cx,scale)*face:0;
- state.pose={...p,height:(b.b-b.u)*scale,bounds:{x:p.x+(face>0?b.l-cx:-(b.r-cx))*scale-lean+Math.min(0,shift),y:p.y+(b.u-anchor)*scale,w:(b.r-b.l)*scale+lean*2+Math.abs(shift),h:(b.b-b.u)*scale}};state.storyCard=card?{n:card.n,picked:card.picked,back:card.back}:null;
+ const {b,scale,face,anchor,cx,i}=anatomy(p),lean=Math.abs(p.lean||0)+Math.abs(p.lag||0);
+ state.pose={...p,height:(b.b-b.u)*scale,bounds:{x:p.x+(face>0?b.l-cx:-(b.r-cx))*scale-lean,y:p.y+(b.u-anchor)*scale,w:(b.r-b.l)*scale+lean*2,h:(b.b-b.u)*scale}};state.storyCard=card?{n:card.n,picked:card.picked,back:card.back}:null;
+ if(p.action==='walk'&&walkMotion.ready)state.pose.bounds={x:p.x-160,y:p.y-365,w:320,h:365};
  const hit=state.pose.bounds;Object.assign(actorHit.style,{left:hit.x/W*100+'%',top:hit.y/H*100+'%',width:hit.w/W*100+'%',height:hit.h/H*100+'%'});actorHit.hidden=(p.alpha??1)<.1;
 }
 function box(slot){return {x:slot.x*W,y:slot.y*H,w:slot.w*W,h:slot.h*H}}
