@@ -3,5 +3,5 @@
 .performancePhoto img{object-fit:cover;mask-image:linear-gradient(90deg,transparent,#000 1.8%,#000 98.2%,transparent),linear-gradient(transparent,#000 2.5%,#000 97.5%,transparent)}
 .performancePhoto.diagram{background:var(--paper)}
 .performancePhoto.diagram img{object-fit:contain}
-@media(max-width:800px){.artwork.mobileSelected img{object-fit:contain}}
+
 @media(prefers-reduced-motion:reduce){.performancePhoto{will-change:auto}}

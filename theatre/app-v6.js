@@ -7,15 +7,12 @@
  function controls(){$('playToggle').textContent=playing?'Ⅱ':'▶';$('playToggle').setAttribute('aria-label',playing?'暂停讲述':'播放讲述');for(const id of ['performer','poster','clayPortrait'])$(id).setAttribute('aria-label',playing?'暂停讲述':'继续讲述')}
  function caption(){const t=voice.currentTime,p=scene();beat=0;while(beat<3&&t>=p.beats[beat].end)beat++;const b=p.beats[beat],line=p.subtitles.find(x=>t>=x.start&&t<x.end)||p.subtitles.filter(x=>x.start<=t).at(-1)||p.subtitles[0];$('caption').textContent=line?.cn||b.cn;$('translation').textContent=b.en;$('note').textContent=b.note;
   [...$('beatIndex').children].forEach((el,i)=>{el.classList.toggle('active',i===beat);el.setAttribute('aria-current',String(i===beat))});}
- let switchKey='';function render(){if(!scene())return;caption();if(!scrubbing){const t=sceneOffsets[page]+voice.currentTime;progress.value=String(t);$('progressDot').style.left=`${t/totalTime*100}%`;progress.setAttribute('aria-valuetext',`整场进度 ${Math.round(t/totalTime*100)}%，第${page+1}幕`)}window.director.render({time:voice.currentTime,playing,mode,unlocked,seeking,reduced:reduced.matches});
-  const ids=stageDesign.images(page),show=innerWidth<=800&&ids.length>1&&scene().kind!=='ending';$('imageSwitch').hidden=!show;const k=`${page}:${show}`;
-  if(k!==switchKey){switchKey=k;$('imageSwitch').replaceChildren();if(show)ids.forEach((n,i)=>{const b=document.createElement('button');b.textContent=scene().kind==='compare'?(n===59?'原始 33':'方案 48'):String(i+1)+' / '+ids.length;b.setAttribute('aria-label','查看本段图纸：'+ART_LABELS[n]);b.onclick=()=>{pause();mode='browse';$('subtitles').hidden=true;director.selectImage(i);render()};$('imageSwitch').append(b)})}
-  $('imageSwitch').style.top=`${innerWidth<=800?worldHeight()*.96-72:0}px`;
+ function render(){if(!scene())return;caption();if(!scrubbing){const t=sceneOffsets[page]+voice.currentTime;progress.value=String(t);$('progressDot').style.left=`${t/totalTime*100}%`;progress.setAttribute('aria-valuetext',`整场进度 ${Math.round(t/totalTime*100)}%，第${page+1}幕`)}window.director.render({time:voice.currentTime,playing,mode,unlocked,seeking,reduced:reduced.matches});
+  $('imageSwitch').hidden=true;
  }
- function worldHeight(){return $('world').offsetHeight}
  function tick(){render();if(playing)raf=requestAnimationFrame(tick)}
  function pause(){director.finishHandoff?.();launch++;starting=false;$('start').disabled=false;playing=false;voice.pause();cancelAnimationFrame(raf);controls();render()}
- async function play(){if(starting)return;director.finishHandoff?.();const v=version,attempt=++launch;starting=true;unlocked=true;mode='show';director.clearSelection();$('subtitles').hidden=false;$('start').disabled=true;tell('正在载入讲述…');
+ async function play(){if(starting||window.stageViewport?.portrait())return;director.finishHandoff?.();const v=version,attempt=++launch;starting=true;unlocked=true;mode='show';director.clearSelection();$('subtitles').hidden=false;$('start').disabled=true;tell('正在载入讲述…');
   try{if(voice.ended)voice.currentTime=0;
    // Start media in the click event before waiting for image preparation.
    const startTime=voice.currentTime;await voice.play();if(v!==version||attempt!==launch)return;voice.pause();voice.currentTime=startTime;await director.prepare();if(v!==version||attempt!==launch)return;await voice.play();if(v!==version||attempt!==launch)return;

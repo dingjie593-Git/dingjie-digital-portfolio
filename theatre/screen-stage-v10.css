@@ -2,7 +2,7 @@
 #screenReadingV10{position:absolute;z-index:6;overflow:hidden;pointer-events:none;mask-image:linear-gradient(90deg,transparent,#000 1.8%,#000 98.2%,transparent),linear-gradient(transparent,#000 2%,#000 98%,transparent);mask-composite:intersect;transform-origin:50% 50%}
 #screenReadingV10>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;will-change:transform}#screenReadingV10.diagram{background:var(--paper)}#screenReadingV10.diagram>img{mix-blend-mode:multiply}
 #screenTouchV10{position:absolute;z-index:8;width:1.6%;aspect-ratio:1;border:2px solid #a5b277;border-radius:50%;pointer-events:none}#screenReadingV10[hidden],#screenTouchV10[hidden]{display:none}
-@media(max-width:800px){#screenReadingV10,#screenTouchV10{display:none}.screenViewportV10>img{object-fit:contain!important}}
+
 
 .screenViewportV10>img{mask-image:none!important}#screenReadingV10{background:var(--paper)}
 

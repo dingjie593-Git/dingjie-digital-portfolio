@@ -21,7 +21,7 @@ let page=0,last=null,views=[],track=[],reading=null,enabled=false;
 const cache=new Map(),picture=n=>{if(!cache.has(n)){const im=new Image();im.src=`assets/work-${n}.webp`;cache.set(n,im)}return cache.get(n)};
 const rect=s=>({x:s.x*W,y:s.y*H,w:s.w*W,h:s.h*H});
 function imageState(i,slot,t){let n=STATIC_LAYOUTS[i].slots[slot].n,old=n,progress=1,event=null;
- for(const c of cues[i])if(c.kind==='swipe'&&c.slot===slot&&t>=c.at){old=n;n=c.n;progress=q(t,c.at,c.at+c.duration);event=c;}
+ for(const c of cues[i])if(c.kind==='swipe'&&c.slot===slot&&t>=c.at){old=n;n=c.n;progress=q(t,c.at+.1,c.at+c.duration);event=c;}
  return {n,old,progress,event};
 }
 function viewAt(i,t){return cues[i].find(c=>c.kind==='tap'&&t>=c.at+.12&&t<c.end+.8)||null}
@@ -44,7 +44,7 @@ for(let i=1;i<=8;i++){
 }
 PERFORMANCE_SCORE[1].transition='push';
 for(const [i,name] of [[1,'关闭屏幕，进入下一组作品'],[2,'从故事屏进入楼层'],[5,'从平面节点进入空间'],[7,'从作品进入表达能力'],[8,'退出展示，向观众致谢']]){PERFORMANCE_HANDOFFS[i].name=name;PERFORMANCE_HANDOFFS[i].note='屏幕内容归位后换景，人物留在舞台上继续引导。';}
-window.DIRECTOR_EDITION='v14 / 步态与转场补帧';
+window.DIRECTOR_EDITION='v15 / 统一横屏与动作复核';
 
 function setImage(im,n){const src=`assets/work-${n}.webp`;if(im.getAttribute('src')!==src)im.src=src;im.alt=ART_LABELS[n]||'';}
 function paintImages(container,a,b,s,reduced,diagram,readingMetrics=null){
@@ -52,7 +52,7 @@ function paintImages(container,a,b,s,reduced,diagram,readingMetrics=null){
  const w=readingMetrics?.box.w||container.clientWidth||1,h=readingMetrics?.box.h||container.clientHeight||1;
  for(const [im,n,offset] of [[a,s.old,-u],[b,s.n,1-u]]){
   const asset=picture(n),nw=asset.naturalWidth||w,nh=asset.naturalHeight||h,contain=Math.min(w/nw,h/nh),cover=Math.max(w/nw,h/nh);
-  const scale=diagrams.has(n)||innerWidth<=800?contain:readingMetrics?mix(cover,contain,readingMetrics.u):cover;
+  const scale=diagrams.has(n)?contain:readingMetrics?mix(cover,contain,readingMetrics.u):cover;
   const iw=nw*scale,ih=nh*scale;
   Object.assign(im.style,{width:iw/w*100+'%',height:ih/h*100+'%',left:(w-iw)/w*50+'%',top:(h-ih)/h*50+'%',objectFit:'fill',transform:`translateX(${offset*w/iw*100}%)`});
  }
@@ -100,7 +100,8 @@ function operator(i,t,p,hand){
  const tail=nodes.at(-1),rest={x:1450,y:900};nodes.push({...rest,at:tail.at+travel(tail,rest)});
  let left=nodes[0],right=nodes.at(-1);let pathDistance=0;
  for(let j=1;j<nodes.length;j++){if(t<=nodes[j].at){left=nodes[j-1];right=nodes[j];break}pathDistance+=Math.hypot(nodes[j].x-nodes[j-1].x,nodes[j].y-nodes[j-1].y);left=nodes[j]}
- const u=q(t,left.at,right.at||left.at+.01),distance=Math.hypot(right.x-left.x,right.y-left.y),moving=distance>.1&&t<right.at;
+ const linear=clamp((t-left.at)/Math.max(.01,right.at-left.at)),ramp=.16,cruise=linear<ramp?linear*linear/(2*ramp*(1-ramp)):linear>1-ramp?1-(1-linear)**2/(2*ramp*(1-ramp)):(linear-ramp/2)/(1-ramp);
+ const u=cruise,distance=Math.hypot(right.x-left.x,right.y-left.y),moving=distance>.1&&t<right.at;
  out={...out,x:mix(left.x,right.x,u),y:mix(left.y,right.y,u),action:moving?'walk':'listen',frame:moving?300+Math.floor((pathDistance+distance*u)/18)%8:200,face:moving?(right.x>=left.x?1:-1):-1};
  // Feet stay planted during preparation, touch and recovery; only the arm/torso acts.
  const c=contacts.find(c=>t>=c.at-c.lead&&t<=c.at+c.duration+c.tail);
@@ -118,13 +119,18 @@ function operator(i,t,p,hand){
   out.frame=since<.2?201:until<.3?201:cycle>7.1&&cycle<8.25?210:cycle>9.2?211:200;
   out.lean=Math.sin(t*1.35+i)*.65;out.squash=1+Math.sin(t*1.65+i)*.0018;
   out.acting={phase:since<.2?'settle':'listen'};
-  if(left.face===1&&since<.48){const turn=q(since,.16,.46);out.face=turn<.5?1:-1;out.turnScale=1-.22*Math.sin(Math.PI*turn);out.acting.phase='turn'}
+  if(left.face===1&&since<.48){const turn=q(since,.16,.46);out.face=turn<.5?1:-1;out.turnScale=1;if(turn>.3&&turn<.7)out.frame=406;out.acting.phase='turn'}
  }else{
   // Walking phase follows distance, and the last step brakes into the planted stance.
-  const speed=6*u*(1-u)*distance/Math.max(.01,right.at-left.at);
+  const velocity=linear<ramp?linear/(ramp*(1-ramp)):linear>1-ramp?(1-linear)/(ramp*(1-ramp)):1/(1-ramp),speed=velocity*distance/Math.max(.01,right.at-left.at);
   out.lean=(out.face===1?-1:1)*Math.min(3,speed/180);
   out.acting={phase:'travel',speed};
-  if(left.face&&left.face!==out.face&&t-left.at<.25){out.turnScale=.82+.18*q(t,left.at,left.at+.25);out.acting.phase='turn'}
+  const rise=right.y-left.y;
+  if(Math.abs(rise)>35){
+   if(rise<0){out.x=mix(left.x,right.x,q(linear,0,.72));out.y=mix(left.y,right.y,q(linear,.55,1));if(linear>.5){out.frame=linear<.9?102:407;out.action='stepUp';out.acting.phase='stepUp'}}
+   else {out.x=mix(left.x,right.x,q(linear,.2,1));out.y=mix(left.y,right.y,q(linear,0,.45));if(linear<.48){out.frame=102;out.action='stepDown';out.acting.phase='stepDown'}}
+  }
+  if(left.face&&left.face!==out.face&&t-left.at<.25){out.turnScale=1;out.acting.phase='turn'}
  }
  const elevated=contacts.find(c=>c.y<875&&t>=c.at-c.lead-1.6&&t<=c.at+c.duration+c.tail+1.6);
  if(elevated)out.screenSupport={start:elevated.at-elevated.lead-1.6,in:.35,end:elevated.at+elevated.duration+elevated.tail+1.6,out:.35,x:elevated.x,top:elevated.y,width:170,color:'olive'};
@@ -139,12 +145,12 @@ director={...base,
   last=info;enabled=info.unlocked&&info.mode==='show';
   if(enabled)for(const v of views){const s=imageState(page,v.slot,info.time);paintImages(v.el,v.a,v.b,s,info.reduced,diagrams.has(s.n));v.el.onclick=()=>window.openArtwork(s.n);v.el.setAttribute('aria-label','放大原图：'+(ART_LABELS[s.n]||''));}
   else for(const v of views){setImage(v.a,STATIC_LAYOUTS[page].slots[v.slot].n);Object.assign(v.a.style,{transform:'',visibility:'',width:'100%',height:'100%',left:'0',top:'0',objectFit:STATIC_LAYOUTS[page].slots[v.slot].diagram?'contain':'cover'});v.b.style.visibility='hidden';}
-  base.render(info);[...$('labels').children].forEach((el,i)=>el.textContent=STATIC_LAYOUTS[page].labels[i][0]);if(innerWidth<=800&&enabled)for(const v of views){const s=imageState(page,v.slot,info.time);paintImages(v.el,v.a,v.b,s,info.reduced,diagrams.has(s.n));v.el.onclick=()=>window.openArtwork(s.n)}reading=enabled?viewAt(page,info.time):null;zoom.hidden=!reading||innerWidth<=800;ring.hidden=true;
-  let z=null;if(reading){z=readingBox(page,info.time,reading);if(info.reduced){z.box=z.target;z.u=1}if(innerWidth>800){paintImages(zoom,zOld,zNew,z.state,info.reduced,diagrams.has(z.state.n),z);Object.assign(zoom.style,{left:z.box.x/W*100+'%',top:z.box.y/H*100+'%',width:z.box.w/W*100+'%',height:z.box.h/H*100+'%',opacity:String(Math.min(1,z.u*5)),transform:`rotate(${(STATIC_LAYOUTS[page].slots[reading.slot].rotate||0)*(1-z.u)}deg)`});
+  base.render(info);[...$('labels').children].forEach((el,i)=>el.textContent=STATIC_LAYOUTS[page].labels[i][0]);reading=enabled?viewAt(page,info.time):null;zoom.hidden=!reading;ring.hidden=true;
+  let z=null;if(reading){z=readingBox(page,info.time,reading);if(info.reduced){z.box=z.target;z.u=1}paintImages(zoom,zOld,zNew,z.state,info.reduced,diagrams.has(z.state.n),z);Object.assign(zoom.style,{left:z.box.x/W*100+'%',top:z.box.y/H*100+'%',width:z.box.w/W*100+'%',height:z.box.h/H*100+'%',opacity:String(Math.min(1,z.u*5)),transform:`rotate(${(STATIC_LAYOUTS[page].slots[reading.slot].rotate||0)*(1-z.u)}deg)`});
     for(const v of views)v.el.style.opacity=String(1-z.u*.48);
     for(const [i,el] of [...$('labels').children].entries()){const l=STATIC_LAYOUTS[page].labels[i];if(z.box.x<(l[1]+l[3])*W&&z.box.x+z.box.w>l[1]*W&&z.box.y<(l[2]+l[4])*H&&z.box.y+z.box.h>l[2]*H)el.style.opacity=String(1-z.u)}
-   }}
-  if(innerWidth<=800&&enabled){const active=z?{slot:reading.slot,n:z.state.n}:cues[page].filter(c=>c.at<=info.time).at(-1);if(active){const slot=active.slot,n=imageState(page,slot,info.time).n;for(const v of views)v.el.classList.toggle('mobileSelected',v.slot===slot);}}
+   }
+
   if(enabled){const lab=$('labels').children;
    if(page===3){const n=imageState(page,0,info.time).n;if(n===33||n===34){lab[0].textContent='8F';lab[1].textContent=n===34?'护理体验':'平行宇宙'}else if(n===36){lab[0].textContent='9F';lab[1].textContent='共享座席'}}
    if(page===4&&imageState(page,0,info.time).n===50)lab[0].textContent='墙面 · 构件研究';
@@ -153,7 +159,7 @@ director={...base,
   }
   const p=base.getState().pose;if(enabled&&!info.reduced&&p?.screenContact){const c=p.screenContact,u=clamp((info.time-c.at)/.45);ring.hidden=false;Object.assign(ring.style,{left:c.target.x/W*100+'%',top:c.target.y/H*100+'%',opacity:String(1-u),transform:`translate(-50%,-50%) scale(${.7+u})`});}
  },
- getState(){const s=base.getState(),z=reading&&last?readingBox(page,last.time,reading):null;return {...s,screens:enabled?views.map(v=>({slot:v.slot,...imageState(page,v.slot,last.time)})):[],props:z&&innerWidth>800?[{n:z.state.n,box:z.box,q:z.u,phase:z.u>.999?'read':'zoom'}]:[],screenZoom:reading?.slot??null,zoomRatio:z?z.zoomScale/z.nativeScale:null}},
+ getState(){const s=base.getState(),z=reading&&last?readingBox(page,last.time,reading):null;return {...s,screens:enabled?views.map(v=>({slot:v.slot,...imageState(page,v.slot,last.time)})):[],props:z?[{n:z.state.n,box:z.box,q:z.u,phase:z.u>.999?'read':'zoom'}]:[],screenZoom:reading?.slot??null,zoomRatio:z?z.zoomScale/z.nativeScale:null}},
  capture(){zoom.hidden=true;ring.hidden=true;return base.capture()},
  async handoff(...args){zoom.hidden=true;ring.hidden=true;return base.handoff(...args)}
 };
