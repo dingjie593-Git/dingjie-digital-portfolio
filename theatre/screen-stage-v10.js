@@ -44,7 +44,7 @@ for(let i=1;i<=8;i++){
 }
 PERFORMANCE_SCORE[1].transition='push';
 for(const [i,name] of [[1,'关闭屏幕，进入下一组作品'],[2,'从故事屏进入楼层'],[5,'从平面节点进入空间'],[7,'从作品进入表达能力'],[8,'退出展示，向观众致谢']]){PERFORMANCE_HANDOFFS[i].name=name;PERFORMANCE_HANDOFFS[i].note='屏幕内容归位后换景，人物留在舞台上继续引导。';}
-window.DIRECTOR_EDITION='v15 / 统一横屏与动作复核';
+window.DIRECTOR_EDITION='v17 / 定稿角色与观看引导';
 
 function setImage(im,n){const src=`assets/work-${n}.webp`;if(im.getAttribute('src')!==src)im.src=src;im.alt=ART_LABELS[n]||'';}
 function paintImages(container,a,b,s,reduced,diagram,readingMetrics=null){
@@ -76,6 +76,11 @@ function contact(i,e,hand){
  return {...root,frame,face,target:{x:root.x+h.x,y:root.y+h.y},slot:e.slot,event:e};
 }
 function operator(i,t,p,hand){
+ if(i===0&&window.INTRO_GUIDE&&t<INTRO_GUIDE.duration){
+  const g=INTRO_GUIDE,step=g.steps.findIndex(s=>t>=s.start&&t<s.end),j=Math.max(0,step),elapsed=t-g.steps[j].start,settle=q(t,g.duration-.7,g.duration);
+  const face=j<2?1:-1,frame=t>g.duration-.7?300+Math.floor(80*settle/18)%8:elapsed<.35?202:elapsed<2?(j===2?209:203):200;
+  return {...p,x:mix(1150,1070,settle),y:900,frame,face,alpha:q(t,0,.35),poseBlend:0,lean:0,lag:0,squash:1,perch:false,acting:{phase:'guide',step:j}};
+ }
  if(i===0||i===9||!cues[i].length)return p;
  const events=[];for(const c of cues[i]){events.push(c);if(c.kind==='tap')events.push({...c,at:c.end,kind:'close',duration:.22,opened:c})}events.sort((a,b)=>a.at-b.at);
  let out={...p,x:home(i,t),y:900,frame:6,action:'listen',face:-1,perch:false,lean:0,lag:0,squash:1,poseBlend:0,screenContact:null};
@@ -134,6 +139,12 @@ function operator(i,t,p,hand){
  }
  const elevated=contacts.find(c=>c.y<875&&t>=c.at-c.lead-1.6&&t<=c.at+c.duration+c.tail+1.6);
  if(elevated)out.screenSupport={start:elevated.at-elevated.lead-1.6,in:.35,end:elevated.at+elevated.duration+elevated.tail+1.6,out:.35,x:elevated.x,top:elevated.y,width:170,color:'olive'};
+ if(i===8&&t>=34.9){
+  const anchor=operator(i,34.899,p,hand),arrival=q(t,34.9,38.5),depart=q(t,44.95,STORY[8].duration-.45),x=t<44.95?mix(anchor.x,1050,arrival):mix(1050,1450,depart);
+  const traveling=t<38.5||t>=44.95&&depart<1,pointing=t>=39.1&&t<44.55;
+  const frame=traveling?300+Math.floor((t<38.5?Math.abs(anchor.x-1050)*arrival:400*depart)/18)%8:t<39.1?400:pointing?410:t<44.95?411:200;
+  out={...out,x,y:t<38.5?mix(anchor.y,900,arrival):900,frame,face:t>=44.95&&depart<1?1:-1,lean:0,lag:0,squash:1,turnScale:1,poseBlend:0,screenContact:null,screenSupport:null,action:pointing?'pointLinks':traveling?'walk':'listen',acting:{phase:pointing?'pointLinks':traveling?'travel':'recover'}};
+ }
  return out;
 }
 window.screenStage={pose:operator,support:p=>p.screenSupport};

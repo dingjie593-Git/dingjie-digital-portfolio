@@ -5,7 +5,7 @@
  const scene=()=>scenes[page],stamp=t=>`${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;
  function tell(t){$('status').textContent=t;$('status').hidden=false;clearTimeout(timer);timer=setTimeout(()=>$('status').hidden=true,4200)}
  function controls(){$('playToggle').textContent=playing?'Ⅱ':'▶';$('playToggle').setAttribute('aria-label',playing?'暂停讲述':'播放讲述');for(const id of ['performer','poster','clayPortrait'])$(id).setAttribute('aria-label',playing?'暂停讲述':'继续讲述')}
- function caption(){const t=voice.currentTime,p=scene();beat=0;while(beat<3&&t>=p.beats[beat].end)beat++;const b=p.beats[beat],line=p.subtitles.find(x=>t>=x.start&&t<x.end)||p.subtitles.filter(x=>x.start<=t).at(-1)||p.subtitles[0];$('caption').textContent=line?.cn||b.cn;$('translation').textContent=b.en;$('note').textContent=b.note;
+ function caption(){const t=voice.currentTime,p=scene();beat=0;while(beat<3&&t>=p.beats[beat].end)beat++;const b=p.beats[beat],line=p.subtitles.find(x=>t>=x.start&&t<x.end)||p.subtitles.filter(x=>x.start<=t).at(-1)||p.subtitles[0];$('caption').textContent=line?.cn||b.cn;$('translation').textContent=line?.en||b.en;$('note').textContent=b.note;
   [...$('beatIndex').children].forEach((el,i)=>{el.classList.toggle('active',i===beat);el.setAttribute('aria-current',String(i===beat))});}
  function render(){if(!scene())return;caption();if(!scrubbing){const t=sceneOffsets[page]+voice.currentTime;progress.value=String(t);$('progressDot').style.left=`${t/totalTime*100}%`;progress.setAttribute('aria-valuetext',`整场进度 ${Math.round(t/totalTime*100)}%，第${page+1}幕`)}window.director.render({time:voice.currentTime,playing,mode,unlocked,seeking,reduced:reduced.matches});
   $('imageSwitch').hidden=true;
