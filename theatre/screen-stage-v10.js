@@ -44,7 +44,7 @@ for(let i=1;i<=8;i++){
 }
 PERFORMANCE_SCORE[1].transition='push';
 for(const [i,name] of [[1,'关闭屏幕，进入下一组作品'],[2,'从故事屏进入楼层'],[5,'从平面节点进入空间'],[7,'从作品进入表达能力'],[8,'退出展示，向观众致谢']]){PERFORMANCE_HANDOFFS[i].name=name;PERFORMANCE_HANDOFFS[i].note='屏幕内容归位后换景，人物留在舞台上继续引导。';}
-window.DIRECTOR_EDITION='v11 / 全幕图面复核';
+window.DIRECTOR_EDITION='v13 / 屏幕表演动作';
 
 function setImage(im,n){const src=`assets/work-${n}.webp`;if(im.getAttribute('src')!==src)im.src=src;im.alt=ART_LABELS[n]||'';}
 function paintImages(container,a,b,s,reduced,diagram,readingMetrics=null){
@@ -69,7 +69,7 @@ function initialize(){
 function home(i,t){return i===8?mix(650,1450,q(t,9,11)):1450}
 function contact(i,e,hand){
  const active=e.kind==='close'?e.opened:viewAt(i,e.at+.05),r=active&&active.slot===e.slot?targetFor(i,active).target:rect(STATIC_LAYOUTS[i].slots[e.slot]);
- const face=r.x+r.w*.5>W*.78?1:-1,frame=r.y>H*.5?109:104;
+ const face=r.x+r.w*.5>W*.78?1:-1,frame=e.kind==='swipe'?(face===1?207:206):r.y>H*.5?206:204;
  const sample={frame,face,perch:false,x:0,y:900},h=hand(sample);
  const tx=r.x+r.w*(face===1?.16:.86),ty=Math.max(r.y+24,Math.min(r.y+r.h-24,900+h.y));
  const root={x:Math.max(130,Math.min(1540,tx-h.x)),y:Math.min(900,ty-h.y)};
@@ -80,27 +80,54 @@ function operator(i,t,p,hand){
  const events=[];for(const c of cues[i]){events.push(c);if(c.kind==='tap')events.push({...c,at:c.end,kind:'close',duration:.22,opened:c})}events.sort((a,b)=>a.at-b.at);
  let out={...p,x:home(i,t),y:900,frame:6,action:'listen',face:-1,perch:false,lean:0,lag:0,squash:1,poseBlend:0,screenContact:null};
  if(i===8&&t>9&&t<11){out.action='walk';out.face=1;out.frame=Math.floor((out.x-650)/24)%6}
- const contacts=events.map(e=>({...contact(i,e,hand),at:e.at,duration:e.duration}));
+ const contacts=events.map((e,j)=>({...contact(i,e,hand),at:e.at,duration:e.duration,
+  lead:Math.min(.56,Math.max(.12,(e.at-(events[j-1]?events[j-1].at+events[j-1].duration:0))*.27)),
+  tail:Math.min(.42,Math.max(.1,((events[j+1]?.at??e.at+3)-e.at-e.duration)*.24))}));
+ // Give travel its share of tight cue gaps before allocating preparation/recovery.
+ for(let j=1;j<contacts.length;j++){
+  const a=contacts[j-1],b=contacts[j],gap=b.at-a.at-a.duration,needed=Math.hypot(b.x-a.x,b.y-a.y)/650*1.5;
+  const budget=Math.max(.045,gap-needed);a.tail=Math.min(a.tail,budget*.45);b.lead=Math.min(b.lead,budget*.55);
+ }
  const nodes=[{at:0,x:home(i,0),y:900}];
  const travel=(a,b)=>Math.max(.75,Math.hypot(a.x-b.x,a.y-b.y)/360*1.5);
  for(const c of contacts){
-  const prev=nodes.at(-1),arrival=c.at-.1,gap=arrival-prev.at,rest={x:home(i,(prev.at+arrival)/2),y:900};
+  const prev=nodes.at(-1),arrival=c.at-c.lead,gap=arrival-prev.at,rest={x:home(i,(prev.at+arrival)/2),y:900};
   const back=travel(prev,rest),forth=travel(rest,c);
   if(gap>back+forth+.65){nodes.push({...rest,at:prev.at+back},{...rest,at:arrival-forth})}
   else if(gap>travel(prev,c)+.2)nodes.push({...prev,at:arrival-travel(prev,c)});
-  nodes.push({...c,at:arrival},{...c,at:c.at+c.duration});
+  nodes.push({...c,at:arrival},{...c,at:c.at+c.duration+c.tail});
  }
  const tail=nodes.at(-1),rest={x:1450,y:900};nodes.push({...rest,at:tail.at+travel(tail,rest)});
- let left=nodes[0],right=nodes.at(-1);
- for(let j=1;j<nodes.length;j++){if(t<=nodes[j].at){left=nodes[j-1];right=nodes[j];break}left=nodes[j]}
+ let left=nodes[0],right=nodes.at(-1);let pathDistance=0;
+ for(let j=1;j<nodes.length;j++){if(t<=nodes[j].at){left=nodes[j-1];right=nodes[j];break}pathDistance+=Math.hypot(nodes[j].x-nodes[j-1].x,nodes[j].y-nodes[j-1].y);left=nodes[j]}
  const u=q(t,left.at,right.at||left.at+.01),distance=Math.hypot(right.x-left.x,right.y-left.y),moving=distance>.1&&t<right.at;
- out={...out,x:mix(left.x,right.x,u),y:mix(left.y,right.y,u),action:moving?'walk':'listen',frame:moving?Math.floor(distance*u/24)%6:6,face:moving?(right.x>=left.x?1:-1):-1};
- const c=contacts.find(c=>t>=c.at-.1&&t<=c.at+c.duration);
- if(c){const e=c.event,swiping=t>=e.at,drag=swiping&&e.kind==='swipe'?-36*Math.sin(Math.PI*(t-e.at)/e.duration):0;
-  out={...out,x:c.x+drag,y:c.y,frame:c.frame,face:c.face,action:e.kind==='swipe'?'swipe':'touch',lean:swiping?-8*Math.sin(Math.PI*(t-e.at)/e.duration):0,screenContact:swiping?{slot:e.slot,kind:e.kind,target:{x:c.target.x+drag,y:c.target.y},at:e.at}:null};
+ out={...out,x:mix(left.x,right.x,u),y:mix(left.y,right.y,u),action:moving?'walk':'listen',frame:moving?Math.floor((pathDistance+distance*u)/24)%6:200,face:moving?(right.x>=left.x?1:-1):-1};
+ // Feet stay planted during preparation, touch and recovery; only the arm/torso acts.
+ const c=contacts.find(c=>t>=c.at-c.lead&&t<=c.at+c.duration+c.tail);
+ if(c){
+  const e=c.event,high=c.frame===204,active=t>=c.at&&t<=c.at+c.duration;
+  let frame=200,phase='anticipate';
+  if(t<c.at){const u=clamp((t-(c.at-c.lead))/c.lead);frame=u<.18?201:u<.48?202:u<.8?(high?203:209):c.frame}
+  else if(active){const u=(t-c.at)/c.duration;frame=e.kind==='swipe'?(c.face===1?(u<.42?207:206):(u<.42?206:207)):c.frame;phase=e.kind==='swipe'?'swipe':'contact'}
+  else {const u=(t-c.at-c.duration)/c.tail;frame=u<.26?c.frame:u<.7?(high?208:209):200;phase='recover'}
+  const pulse=active?Math.sin(Math.PI*(t-c.at)/c.duration):0;
+  out={...out,x:c.x,y:c.y,frame,face:c.face,action:phase,lean:active?-2*pulse:0,squash:1,acting:{event:e.kind,phase,slot:e.slot},screenContact:null};
+  if(active){const h=hand(out);out.screenContact={slot:e.slot,kind:e.kind,target:{x:out.x+h.x,y:out.y+h.y},at:e.at}}
+ }else if(!moving){
+  const since=t-left.at,until=right.at-t,cycle=(t+i*1.73)%11.7;
+  out.frame=since<.2?201:until<.3?201:cycle>7.1&&cycle<8.25?210:cycle>9.2?211:200;
+  out.lean=Math.sin(t*1.35+i)*.65;out.squash=1+Math.sin(t*1.65+i)*.0018;
+  out.acting={phase:since<.2?'settle':'listen'};
+  if(left.face===1&&since<.48){const turn=q(since,.16,.46);out.face=turn<.5?1:-1;out.turnScale=1-.22*Math.sin(Math.PI*turn);out.acting.phase='turn'}
+ }else{
+  // Walking phase follows distance, and the last step brakes into the planted stance.
+  const speed=6*u*(1-u)*distance/Math.max(.01,right.at-left.at);
+  out.lean=(out.face===1?-1:1)*Math.min(3,speed/180);
+  out.acting={phase:'travel',speed};
+  if(left.face&&left.face!==out.face&&t-left.at<.25){out.turnScale=.82+.18*q(t,left.at,left.at+.25);out.acting.phase='turn'}
  }
- const elevated=contacts.find(c=>c.y<875&&Math.abs(t-c.at)<1.5);
- if(elevated)out.screenSupport={start:elevated.at-1.5,in:.45,end:elevated.at+1.2,out:.35,x:elevated.x,top:elevated.y,width:170,color:'olive'};
+ const elevated=contacts.find(c=>c.y<875&&t>=c.at-c.lead-1.6&&t<=c.at+c.duration+c.tail+1.6);
+ if(elevated)out.screenSupport={start:elevated.at-elevated.lead-1.6,in:.35,end:elevated.at+elevated.duration+elevated.tail+1.6,out:.35,x:elevated.x,top:elevated.y,width:170,color:'olive'};
  return out;
 }
 window.screenStage={pose:operator,support:p=>p.screenSupport};

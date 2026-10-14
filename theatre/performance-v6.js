@@ -12,10 +12,10 @@ const ns='http://www.w3.org/2000/svg',focus=document.createElementNS(ns,'svg');f
 const pauseButton=document.createElement('button');pauseButton.id='pauseShow';pauseButton.hidden=true;pauseButton.textContent='Ⅱ 暂停';pauseButton.onclick=()=>transitioning?window.theatre.pause():$('playToggle').click();
 $('stageCanvas').append(props,focus,canvas,pauseButton);
 const staticImages=stageDesign.images;stageDesign.images=i=>i===6?[...staticImages(i),66]:staticImages(i);
-const context=canvas.getContext('2d'),atlases=[{src:'assets/walking-cast-v1.png',rows:3,count:12},{src:'assets/director-v1/acting-atlas.webp',rows:3,count:12}];
+const context=canvas.getContext('2d'),atlases=[{src:'assets/walking-cast-v1.png',rows:3,count:12},{src:'assets/director-v1/acting-atlas.webp',rows:3,count:12},{src:'assets/acting-v13/screen-actions.webp',rows:3,count:12}];
 let page=0,previous=null,enabled=false,loaded=false,transitioning=false,transitionId=0,state={},lastRender=null,photoNodes=[];
 // Use the connected alpha component of each tile, excluding atlas noise.
-function bounds(data,w,h){const seen=new Uint8Array(w*h),queue=new Int32Array(w*h);let best={area:0,l:0,r:0,u:0,b:0};for(let n=0;n<w*h;n++){if(seen[n]||data[n*4+3]<100)continue;let head=0,tail=1,l=w,r=0,u=h,b=0;queue[0]=n;seen[n]=1;while(head<tail){const z=queue[head++],x=z%w,y=Math.floor(z/w);l=Math.min(l,x);r=Math.max(r,x);u=Math.min(u,y);b=Math.max(b,y);for(const next of [x?z-1:-1,x<w-1?z+1:-1,y?z-w:-1,y<h-1?z+w:-1])if(next>=0&&!seen[next]&&data[next*4+3]>=100){seen[next]=1;queue[tail++]=next}}if(tail>best.area)best={area:tail,l,r,u,b}}best.cx=(best.l+best.r)/2;return best}
+function bounds(data,w,h){const seen=new Uint8Array(w*h),queue=new Int32Array(w*h);let best={area:0,l:0,r:0,u:0,b:0};for(let n=0;n<w*h;n++){if(seen[n]||data[n*4+3]<100)continue;let head=0,tail=1,l=w,r=0,u=h,b=0;queue[0]=n;seen[n]=1;while(head<tail){const z=queue[head++],x=z%w,y=Math.floor(z/w);l=Math.min(l,x);r=Math.max(r,x);u=Math.min(u,y);b=Math.max(b,y);for(const next of [x?z-1:-1,x<w-1?z+1:-1,y?z-w:-1,y<h-1?z+w:-1])if(next>=0&&!seen[next]&&data[next*4+3]>=100){seen[next]=1;queue[tail++]=next}}if(tail>best.area)best={area:tail,l,r,u,b}}best.cx=(best.l+best.r)/2;let sum=0,total=0;for(let y=Math.floor(best.b-(best.b-best.u)*.1);y<=best.b;y++)for(let x=best.l;x<=best.r;x++){const alpha=data[(y*w+x)*4+3];if(alpha>100){sum+=x*alpha;total+=alpha}}best.footX=total?sum/total:best.cx;return best}
 const prepared=Promise.all(atlases.map(async a=>{a.image=new Image();a.image.src=a.src;await a.image.decode();a.w=a.image.width/4;a.h=a.image.height/a.rows;const c=document.createElement('canvas');c.width=a.w;c.height=a.h;const ctx=c.getContext('2d',{willReadFrequently:true});a.boxes=[];for(let i=0;i<a.count;i++){ctx.clearRect(0,0,a.w,a.h);ctx.drawImage(a.image,i%4*a.w,Math.floor(i/4)*a.h,a.w,a.h,0,0,a.w,a.h);a.boxes.push(bounds(ctx.getImageData(0,0,a.w,a.h).data,a.w,a.h))}})).then(()=>{loaded=true;window.dispatchEvent(new Event('castready'))});
 const frames={look:6,present:10,nod:11,reach:100,brace:101,climb:102,balance:103,touch:104,recoil:105,sit:106,grasp:107,pull:108,push:109,dust:110,wave:111,inspect:11,front:6,listen:6,point:8,hold:9};
 const flips=[1,1,1,1,-1,1,1,1,-1,-1,1,-1],basicFacing=[1,1,1,1,1,1,1,1,-1,1,1,-1];
@@ -51,8 +51,10 @@ function rawPose(scene,time){
  const appear=score[scene].appear,alpha=appear?q(time,appear[0],appear[1]):1;
  const pose={x:mix(a.x,b.x,u)+m.dx,y:(crossingSeat?a.y:mix(a.y,b.y,u))+m.dy+bob+(appear?(1-alpha)*65:0),action,face,frame,perch:action==='sit',time,lean:m.lean,lag:m.lag,squash:m.squash,alpha,previousFrame:frames[prev.action],poseBlend:blend};return window.screenStage?.pose(scene,time,pose,hand)||pose;
 }
-function anatomy(p){const fresh=p.frame>=100,a=atlases[fresh?1:0],i=fresh?p.frame-100:p.frame,b=a.boxes[i],ref=a.boxes[fresh?3:6],scale=Math.min(342/(ref.b-ref.u),375/(b.b-b.u),320/(b.r-b.l)),face=p.face*(fresh?flips[i]:basicFacing[i]),anchor=p.perch?b.u+(b.b-b.u)*.64:b.b;return {fresh,a,i,b,scale,face,anchor}}
-function hand(p){const {fresh,i,b,scale,face,anchor}=anatomy(p),x=fresh?[.9,.85,.85,.5,.03,.5,.5,.93,.08,.05,.5,.5][i]:[.9,.88,.67,.9,.9,.67,.7,.08,.04,.75,.95,.24][i],y=fresh?[.02,.36,.28,.5,.015,.35,.6,.34,.28,.28,.5,.15][i]:[.5,.38,.55,.38,.5,.55,.58,.08,.04,.45,.17,.24][i];return {x:(b.l+(b.r-b.l)*x-b.cx)*scale*face,y:(b.u+(b.b-b.u)*y-anchor)*scale}}
+const screenFlips=[1,1,1,1,-1,-1,1,1,1,1,1,1];
+function anatomy(p){const bank=p.frame>=200?2:p.frame>=100?1:0,fresh=bank===1,a=atlases[bank],i=p.frame%100,b=a.boxes[i],ref=a.boxes[bank===1?3:bank===2?0:6],scale=bank===2?342/(ref.b-ref.u):Math.min(342/(ref.b-ref.u),375/(b.b-b.u),320/(b.r-b.l)),face=p.face*(bank===2?screenFlips[i]:fresh?flips[i]:basicFacing[i]),anchor=p.perch?b.u+(b.b-b.u)*.64:b.b,cx=bank===2?b.footX:b.cx;return {bank,fresh,a,i,b,scale,face,anchor,cx}}
+function hand(p){const {bank,fresh,i,b,scale,face,anchor,cx}=anatomy(p),x=bank===2?[.3,.3,.92,.98,.02,.02,.98,.98,.22,.6,.3,.8][i]:fresh?[.9,.85,.85,.5,.03,.5,.5,.93,.08,.05,.5,.5][i]:[.9,.88,.67,.9,.9,.67,.7,.08,.04,.75,.95,.24][i],y=bank===2?[.61,.61,.27,.10,.015,.14,.30,.30,.30,.34,.61,.63][i]:fresh?[.02,.36,.28,.5,.015,.35,.6,.34,.28,.28,.5,.15][i]:[.5,.38,.55,.38,.5,.55,.58,.08,.04,.45,.17,.24][i];return {x:(b.l+(b.r-b.l)*x-cx)*scale*face,y:(b.u+(b.b-b.u)*y-anchor)*scale}}
+
 const storyPictures=new Map();
 function storyImage(n){if(!storyPictures.has(n)){const im=new Image();im.src=`assets/work-${n}.webp`;storyPictures.set(n,im)}return storyPictures.get(n)}
 function carryAt(scene,t,p){
@@ -77,11 +79,11 @@ function supportAt(t,p){const c=window.screenStage?.support(p)||score[page].supp
  context.fillStyle='#37261312';for(let i=0;i<65;i++){const xx=x+12+(i*47%Math.max(1,w-24)),yy=top+16+(i*31%Math.max(1,h-24));context.beginPath();context.ellipse(xx,yy,.8+(i%3)*.3,.7,0,0,Math.PI*2);context.fill()}context.restore();
 }
 function paintPose(p,alpha=1){
- const {a,i,b,scale,face,anchor}=anatomy(p),sx=i%4*a.w+b.l,sy=Math.floor(i/4)*a.h+b.u,sw=b.r-b.l+1,sh=b.b-b.u+1;
- context.save();context.globalAlpha*=alpha;context.translate(p.x,p.y);context.scale(face,p.squash||1);
+ const {a,i,b,scale,face,anchor,cx}=anatomy(p),sx=i%4*a.w+b.l,sy=Math.floor(i/4)*a.h+b.u,sw=b.r-b.l+1,sh=b.b-b.u+1;
+ context.save();context.globalAlpha*=alpha;context.translate(p.x,p.y);context.scale(face*(p.turnScale??1),p.squash||1);
  const strips=Math.abs(p.lean||0)+Math.abs(p.lag||0)>.05?24:1;
  for(let j=0;j<strips;j++){const v=j/strips,v2=(j+1)/strips,dy=(b.u+sh*v-anchor)*scale,dh=sh/strips*scale+.5,offset=((p.lean||0)*(1-v)**2+(p.lag||0)*(1-v)**4)*face;
-  context.drawImage(a.image,sx,sy+sh*v,sw,Math.min(sh/strips+1,sh-sh*v),(b.l-b.cx)*scale+offset,dy,sw*scale,dh);
+  context.drawImage(a.image,sx,sy+sh*v,sw,Math.min(sh/strips+1,sh-sh*v),(b.l-cx)*scale+offset,dy,sw*scale,dh);
  }
  context.restore();
 }
@@ -92,8 +94,8 @@ function draw(p){
  context.fillStyle=page===0||page===3||page===9?'#30352350':'#67583e35';context.beginPath();context.ellipse(p.x,p.perch?900:p.y+1,p.perch?28:46,7,0,0,Math.PI*2);context.fill();
  const f=p.poseBlend||0;if(f>.001)paintPose({...p,frame:p.previousFrame},f);paintPose(p,1-f);
  const card=p.carryOverride===undefined?carryAt(page,p.time||0,p):p.carryOverride;paperCard(card);context.restore();
- if(mobile)context.restore();const {b,scale,face,anchor}=anatomy(p),lean=Math.abs(p.lean||0)+Math.abs(p.lag||0);
- state.pose={...p,height:(b.b-b.u)*scale,bounds:{x:p.x+(face>0?b.l-b.cx:-(b.r-b.cx))*scale-lean,y:p.y+(b.u-anchor)*scale,w:(b.r-b.l)*scale+lean*2,h:(b.b-b.u)*scale}};state.storyCard=card?{n:card.n,picked:card.picked,back:card.back}:null;
+ if(mobile)context.restore();const {b,scale,face,anchor,cx}=anatomy(p),lean=Math.abs(p.lean||0)+Math.abs(p.lag||0);
+ state.pose={...p,height:(b.b-b.u)*scale,bounds:{x:p.x+(face>0?b.l-cx:-(b.r-cx))*scale-lean,y:p.y+(b.u-anchor)*scale,w:(b.r-b.l)*scale+lean*2,h:(b.b-b.u)*scale}};state.storyCard=card?{n:card.n,picked:card.picked,back:card.back}:null;
 }
 function box(slot){return {x:slot.x*W,y:slot.y*H,w:slot.w*W,h:slot.h*H}}
 function blend(a,b,u){const c={};for(const k of ['x','y','w','h'])c[k]=mix(a[k],b[k],u);return c}
