@@ -18,7 +18,7 @@
  async function play(){if(starting)return;director.finishHandoff?.();const v=version,attempt=++launch;starting=true;unlocked=true;mode='show';director.clearSelection();$('subtitles').hidden=false;$('start').disabled=true;tell('正在载入讲述…');
   try{if(voice.ended)voice.currentTime=0;
    // Start media in the click event before waiting for image preparation.
-   const sound=voice.play();await Promise.all([sound,director.prepare()]);if(v!==version||attempt!==launch)return;
+   const startTime=voice.currentTime;await voice.play();if(v!==version||attempt!==launch)return;voice.pause();voice.currentTime=startTime;await director.prepare();if(v!==version||attempt!==launch)return;await voice.play();if(v!==version||attempt!==launch)return;
    starting=false;loading=false;playing=true;seeking=false;$('start').disabled=false;$('welcome').hidden=true;controls();$('status').hidden=true;cancelAnimationFrame(raf);tick();}
   catch(e){if(v!==version||attempt!==launch)return;pause();if(page===0)$('welcome').hidden=false;tell(e.name==='NotAllowedError'?'请再点击一次人物，开始有声讲述。':'载入暂未完成，请点击人物或“跟我走一遍”重试。')}
  }
