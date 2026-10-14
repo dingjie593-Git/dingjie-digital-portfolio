@@ -78,13 +78,12 @@ function contact(i,e,hand){
 function operator(i,t,p,hand){
  if(i===0&&window.INTRO_GUIDE&&t<INTRO_GUIDE.duration){
   const g=INTRO_GUIDE,step=g.steps.findIndex(s=>t>=s.start&&t<s.end),j=Math.max(0,step),elapsed=t-g.steps[j].start,settle=q(t,g.duration-.7,g.duration);
-  const face=j<2?1:-1,frame=t>g.duration-.7?300+Math.floor(80*settle/18)%8:elapsed<.35?202:elapsed<2?(j===2?209:203):200;
-  return {...p,x:mix(1150,1070,settle),y:900,frame,face,alpha:q(t,0,.35),poseBlend:0,lean:0,lag:0,squash:1,perch:false,acting:{phase:'guide',step:j}};
+  const face=j<2?1:-1,frame=t>g.duration-.7?300+walkGait.frame(80*settle):elapsed<.35?202:elapsed<2?(j===2?209:203):200;
+  return {...p,action:t>g.duration-.7?'walk':'listen',walkDistance:80*settle,x:mix(1150,1070,settle),y:900,frame,face,alpha:q(t,0,.35),poseBlend:0,lean:0,lag:0,squash:1,perch:false,acting:{phase:'guide',step:j}};
  }
  if(i===0||i===9||!cues[i].length)return p;
  const events=[];for(const c of cues[i]){events.push(c);if(c.kind==='tap')events.push({...c,at:c.end,kind:'close',duration:.22,opened:c})}events.sort((a,b)=>a.at-b.at);
  let out={...p,x:home(i,t),y:900,frame:6,action:'listen',face:-1,perch:false,lean:0,lag:0,squash:1,poseBlend:0,screenContact:null};
- if(i===8&&t>9&&t<11){out.action='walk';out.face=1;out.frame=300+Math.floor((out.x-650)/18)%8}
  const contacts=events.map((e,j)=>({...contact(i,e,hand),at:e.at,duration:e.duration,
   lead:Math.min(.56,Math.max(.12,(e.at-(events[j-1]?events[j-1].at+events[j-1].duration:0))*.27)),
   tail:Math.min(.42,Math.max(.1,((events[j+1]?.at??e.at+3)-e.at-e.duration)*.24))}));
@@ -103,11 +102,11 @@ function operator(i,t,p,hand){
   nodes.push({...c,at:arrival},{...c,at:c.at+c.duration+c.tail});
  }
  const tail=nodes.at(-1),rest={x:1450,y:900};nodes.push({...rest,at:tail.at+travel(tail,rest)});
- let left=nodes[0],right=nodes.at(-1);let pathDistance=0;
- for(let j=1;j<nodes.length;j++){if(t<=nodes[j].at){left=nodes[j-1];right=nodes[j];break}pathDistance+=Math.hypot(nodes[j].x-nodes[j-1].x,nodes[j].y-nodes[j-1].y);left=nodes[j]}
+ let left=nodes[0],right=nodes.at(-1);
+ for(let j=1;j<nodes.length;j++){if(t<=nodes[j].at){left=nodes[j-1];right=nodes[j];break}left=nodes[j]}
  const linear=clamp((t-left.at)/Math.max(.01,right.at-left.at)),ramp=.16,cruise=linear<ramp?linear*linear/(2*ramp*(1-ramp)):linear>1-ramp?1-(1-linear)**2/(2*ramp*(1-ramp)):(linear-ramp/2)/(1-ramp);
  const u=cruise,distance=Math.hypot(right.x-left.x,right.y-left.y),moving=distance>.1&&t<right.at;
- out={...out,x:mix(left.x,right.x,u),y:mix(left.y,right.y,u),action:moving?'walk':'listen',frame:moving?300+Math.floor((pathDistance+distance*u)/18)%8:200,face:moving?(right.x>=left.x?1:-1):-1};
+ out={...out,walkDistance:distance*u,x:mix(left.x,right.x,u),y:mix(left.y,right.y,u),action:moving?'walk':'listen',frame:moving?300+walkGait.frame(distance*u):200,face:moving?(right.x>=left.x?1:-1):-1};
  // Feet stay planted during preparation, touch and recovery; only the arm/torso acts.
  const c=contacts.find(c=>t>=c.at-c.lead&&t<=c.at+c.duration+c.tail);
  if(c){
@@ -142,8 +141,8 @@ function operator(i,t,p,hand){
  if(i===8&&t>=34.9){
   const anchor=operator(i,34.899,p,hand),arrival=q(t,34.9,38.5),depart=q(t,44.95,STORY[8].duration-.45),x=t<44.95?mix(anchor.x,1050,arrival):mix(1050,1450,depart);
   const traveling=t<38.5||t>=44.95&&depart<1,pointing=t>=39.1&&t<44.55;
-  const frame=traveling?300+Math.floor((t<38.5?Math.abs(anchor.x-1050)*arrival:400*depart)/18)%8:t<39.1?400:pointing?410:t<44.95?411:200;
-  out={...out,x,y:t<38.5?mix(anchor.y,900,arrival):900,frame,face:t>=44.95&&depart<1?1:-1,lean:0,lag:0,squash:1,turnScale:1,poseBlend:0,screenContact:null,screenSupport:null,action:pointing?'pointLinks':traveling?'walk':'listen',acting:{phase:pointing?'pointLinks':traveling?'travel':'recover'}};
+  const frame=traveling?300+walkGait.frame(t<38.5?Math.abs(anchor.x-1050)*arrival:400*depart):t<39.1?400:pointing?410:t<44.95?411:200;
+  out={...out,walkDistance:t<38.5?Math.abs(anchor.x-1050)*arrival:400*depart,x,y:t<38.5?mix(anchor.y,900,arrival):900,frame,face:t>=44.95&&depart<1?1:-1,lean:0,lag:0,squash:1,turnScale:1,poseBlend:0,screenContact:null,screenSupport:null,action:pointing?'pointLinks':traveling?'walk':'listen',acting:{phase:pointing?'pointLinks':traveling?'travel':'recover'}};
  }
  return out;
 }

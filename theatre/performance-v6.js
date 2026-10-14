@@ -21,8 +21,9 @@ const staticImages=stageDesign.images;stageDesign.images=i=>i===6?[...staticImag
 const context=canvas.getContext('2d'),atlases=[
  {src:'assets/identity-v17/basic.webp',rows:2,count:8,manifest:'assets/identity-v17/basic-regions.json'},null,
  {src:'assets/identity-v17/screen.webp',rows:3,count:12,manifest:'assets/identity-v17/screen-regions.json'},
- {src:'assets/identity-v17/walk.webp',rows:2,count:8,manifest:'assets/identity-v17/walk-regions.json'},
- null,{src:'assets/identity-v17/point.webp',rows:1,count:1,manifest:'assets/identity-v17/point-regions.json'}];
+ {src:'assets/acting-v18/walk.webp',rows:2,count:8,manifest:'assets/acting-v18/walk-regions.json'},
+ null,{src:'assets/identity-v17/point.webp',rows:1,count:1,manifest:'assets/identity-v17/point-regions.json'},
+ {src:'assets/acting-v18/turn-push.webp',rows:2,count:8,manifest:'assets/acting-v18/turn-push-regions.json'}];
 let page=0,previous=null,enabled=false,loaded=false,transitioning=false,transitionId=0,state={},lastRender=null,photoNodes=[];
 // Use the connected alpha component of each tile, excluding atlas noise.
 function bounds(data,w,h){const seen=new Uint8Array(w*h),queue=new Int32Array(w*h);let best={area:0,l:0,r:0,u:0,b:0};for(let n=0;n<w*h;n++){if(seen[n]||data[n*4+3]<100)continue;let head=0,tail=1,l=w,r=0,u=h,b=0;queue[0]=n;seen[n]=1;while(head<tail){const z=queue[head++],x=z%w,y=Math.floor(z/w);l=Math.min(l,x);r=Math.max(r,x);u=Math.min(u,y);b=Math.max(b,y);for(const next of [x?z-1:-1,x<w-1?z+1:-1,y?z-w:-1,y<h-1?z+w:-1])if(next>=0&&!seen[next]&&data[next*4+3]>=100){seen[next]=1;queue[tail++]=next}}if(tail>best.area)best={area:tail,l,r,u,b}}best.cx=(best.l+best.r)/2;let sum=0,total=0;for(let y=Math.floor(best.b-(best.b-best.u)*.1);y<=best.b;y++)for(let x=best.l;x<=best.r;x++){const alpha=data[(y*w+x)*4+3];if(alpha>100){sum+=x*alpha;total+=alpha}}best.footX=total?sum/total:best.cx;sum=0;total=0;for(let y=Math.floor(best.u+(best.b-best.u)*.52);y<=Math.floor(best.u+(best.b-best.u)*.64);y++)for(let x=best.l;x<=best.r;x++){const alpha=data[(y*w+x)*4+3];if(alpha>100){sum+=x*alpha;total+=alpha}}best.hipX=total?sum/total:best.cx;return best}
@@ -60,19 +61,18 @@ function rawPose(scene,time){
  const a=route[index],b=route[Math.min(index+1,route.length-1)],u=a===b?0:q(time,a.t,b.t),distance=Math.hypot(b.x-a.x,b.y-a.y),moving=distance>15&&u>.01&&u<.99;
  let action=a.action;if(moving&&!['climb','pull','push','sit','recoil','brace'].includes(action))action='walk';
  const crossingSeat=(a.action==='sit')!==(b.action==='sit'),m=businessAt(scene,time);
- const walkPhase=(distance*u+route.slice(1,index+1).reduce((d,c,j)=>d+Math.hypot(c.x-route[j].x,c.y-route[j].y),0))/18;
- const bob=action==='walk'?-Math.abs(Math.sin(walkPhase*Math.PI))*3:0;
+ const walkDistance=distance*u+route.slice(1,index+1).reduce((d,c,j)=>d+Math.hypot(c.x-route[j].x,c.y-route[j].y),0);
  const face=moving&&action==='walk'?(b.x>a.x?1:-1):a.face;
- const frame=action==='walk'?300+Math.floor(walkPhase)%8:frames[action];
+ const frame=action==='walk'?300+walkGait.frame(walkDistance):frames[action];
  const prev=route[Math.max(0,index-1)],blend=action!=='walk'&&prev.action!==action&&!['sit','climb'].includes(action)&&!['sit','walk','climb'].includes(prev.action)?1-q(time,a.t,a.t+.1):0;
  const appear=score[scene].appear,alpha=appear?q(time,appear[0],appear[1]):1;
- const pose={x:mix(a.x,b.x,u)+m.dx,y:(crossingSeat?a.y:mix(a.y,b.y,u))+m.dy+bob+(appear?(1-alpha)*65:0),action,face,frame,perch:action==='sit',time,lean:m.lean,lag:m.lag,squash:m.squash,alpha,previousFrame:frames[prev.action],poseBlend:blend};return window.screenStage?.pose(scene,time,pose,hand)||pose;
+ const pose={walkDistance,x:mix(a.x,b.x,u)+m.dx,y:(crossingSeat?a.y:mix(a.y,b.y,u))+m.dy+(appear?(1-alpha)*65:0),action,face,frame,perch:action==='sit',time,lean:m.lean,lag:m.lag,squash:m.squash,alpha,previousFrame:frames[prev.action],poseBlend:blend};return window.screenStage?.pose(scene,time,pose,hand)||pose;
 }
 const basicAliases=[300,301,302,303,304,305,0,4,203,1,207,7],actingAliases=[203,400,408,409,204,405,407,400,404,402,2,202];
 function anatomy(p){
- let canonical=p.frame<100?basicAliases[p.frame]:p.frame<200?actingAliases[p.frame-100]:p.frame;if(canonical>=400&&canonical<500)canonical=[202,206,207,207,209,209,211,200,303,211,500,209][canonical-400];
+ let canonical=p.action==='walk'&&Number.isFinite(p.walkDistance)?300+walkGait.frame(p.walkDistance):p.frame<100?basicAliases[p.frame]:p.frame<200?actingAliases[p.frame-100]:p.frame;if(canonical>=400&&canonical<500)canonical=[202,206,207,207,209,209,211,200,303,211,500,209][canonical-400];
  const bank=Math.floor(canonical/100),a=atlases[bank],i=canonical%100,b=a.boxes[i],ref=a.boxes[0];
- const scale=342/(ref.b-ref.u),native=a.nativeFaces?.[i]??(bank===2?-1:1),face=p.face*native,anchor=p.perch?b.u+(b.b-b.u)*.64:b.b,cx=bank>=3?b.hipX:b.footX;
+ const scale=342/(ref.b-ref.u),native=a.nativeFaces?.[i]??(bank===2?-1:1),face=p.face*native,anchor=p.perch?b.u+(b.b-b.u)*.64:b.b,cx=bank===6?b.footX:bank>=3?b.hipX:b.footX;
  return {bank,a,i,b,scale,face,anchor,cx};
 }
 function hand(p){const {bank,i,b,scale,face,anchor,cx}=anatomy(p),x=bank===5?.02:bank===4?[.8,.95,.98,.98,.94,.8,.55,.5,.8,.8,.98,.65][i]:bank===3?.8:bank===2?[.3,.3,.08,.02,.02,.02,.02,.02,.25,.25,.3,.8][i]:.7,y=bank===5?.54:bank===4?[.31,.28,.27,.27,.29,.32,.52,.6,.3,.4,.69,.49][i]:bank===3?.48:bank===2?[.61,.61,.27,.10,.015,.14,.33,.33,.30,.34,.61,.63][i]:.5;return {x:(b.l+(b.r-b.l)*x-cx)*scale*face,y:(b.u+(b.b-b.u)*y-anchor)*scale}}
@@ -103,25 +103,27 @@ function supportAt(t,p){const c=window.screenStage?.support(p)||score[page].supp
 function paintPose(p,alpha=1){
  const {a,i,b,scale,face,anchor,cx}=anatomy(p),sx=a.regions[i][0]+b.l,sy=a.regions[i][1]+b.u,sw=b.r-b.l+1,sh=b.b-b.u+1;
  context.save();context.globalAlpha*=alpha;context.translate(p.x,p.y);context.scale(face*(p.turnScale??1),p.squash||1);
- const strips=Math.abs(p.lean||0)+Math.abs(p.lag||0)>.05?24:1;
- for(let j=0;j<strips;j++){const v=j/strips,v2=(j+1)/strips,dy=(b.u+sh*v-anchor)*scale,dh=sh/strips*scale+.5,offset=((p.lean||0)*(1-v)**2+(p.lag||0)*(1-v)**4)*face;
+ const walking=p.action==='walk'&&Number.isFinite(p.walkDistance),strips=walking?64:Math.abs(p.lean||0)+Math.abs(p.lag||0)>.05?24:1;
+ for(let j=0;j<strips;j++){const v=j/strips,v2=(j+1)/strips,dy=(b.u+sh*v-anchor)*scale,dh=sh/strips*scale+.5,offset=((p.lean||0)*(1-v)**2+(p.lag||0)*(1-v)**4)*face+(walking?walkGait.offset(p.walkDistance,i,cx,scale)*clamp((v-.59)/.34):0);
   context.drawImage(a.image,sx,sy+sh*v,sw,Math.min(sh/strips+1,sh-sh*v),(b.l-cx)*scale+offset,dy,sw*scale,dh);
  }
  context.restore();
 }
 function draw(p){
  context.clearRect(0,0,W,H);if(!loaded||!enabled)return;
+ if(p.action==='walk'&&Number.isFinite(p.walkDistance))p={...p,frame:300+walkGait.frame(p.walkDistance)};
  // Guard the complete silhouette at stage edges, including transition gestures.
  const shape=anatomy(p),stretch=p.turnScale??1,lo=(shape.face>0?shape.b.l-shape.cx:shape.cx-shape.b.r)*shape.scale*stretch,hi=(shape.face>0?shape.b.r-shape.cx:shape.cx-shape.b.l)*shape.scale*stretch;
- const guardedX=Math.max(18-lo,Math.min(W-18-hi,p.x));if(guardedX!==p.x){const dx=guardedX-p.x;p={...p,x:guardedX,edgeGuard:true};if(p.screenContact)p.screenContact={...p.screenContact,target:{x:p.screenContact.target.x+dx,y:p.screenContact.target.y}}}
+ const lowerShift=p.action==='walk'&&Number.isFinite(p.walkDistance)?walkGait.offset(p.walkDistance,shape.i,shape.cx,shape.scale)*shape.face:0;
+ const guardedX=Math.max(18-lo-Math.min(0,lowerShift),Math.min(W-18-hi-Math.max(0,lowerShift),p.x));if(guardedX!==p.x){const dx=guardedX-p.x;p={...p,x:guardedX,edgeGuard:true};if(p.screenContact)p.screenContact={...p.screenContact,target:{x:p.screenContact.target.x+dx,y:p.screenContact.target.y}}}
 
 
  if(!p.reduced)supportAt(p.time||0,p);context.save();context.globalAlpha=p.alpha??1;
  context.fillStyle=page===0||page===3||page===9?'#30352350':'#67583e35';context.beginPath();context.ellipse(p.x,p.perch?900:p.y+1,p.perch?28:46,7,0,0,Math.PI*2);context.fill();
  const f=p.poseBlend||0;if(f>.001)paintPose({...p,frame:p.previousFrame},f);paintPose(p,1-f);
  const card=p.carryOverride===undefined?carryAt(page,p.time||0,p):p.carryOverride;paperCard(card);context.restore();
- const {b,scale,face,anchor,cx}=anatomy(p),lean=Math.abs(p.lean||0)+Math.abs(p.lag||0);
- state.pose={...p,height:(b.b-b.u)*scale,bounds:{x:p.x+(face>0?b.l-cx:-(b.r-cx))*scale-lean,y:p.y+(b.u-anchor)*scale,w:(b.r-b.l)*scale+lean*2,h:(b.b-b.u)*scale}};state.storyCard=card?{n:card.n,picked:card.picked,back:card.back}:null;
+ const {b,scale,face,anchor,cx,i}=anatomy(p),lean=Math.abs(p.lean||0)+Math.abs(p.lag||0),shift=p.action==='walk'&&Number.isFinite(p.walkDistance)?walkGait.offset(p.walkDistance,i,cx,scale)*face:0;
+ state.pose={...p,height:(b.b-b.u)*scale,bounds:{x:p.x+(face>0?b.l-cx:-(b.r-cx))*scale-lean+Math.min(0,shift),y:p.y+(b.u-anchor)*scale,w:(b.r-b.l)*scale+lean*2+Math.abs(shift),h:(b.b-b.u)*scale}};state.storyCard=card?{n:card.n,picked:card.picked,back:card.back}:null;
  const hit=state.pose.bounds;Object.assign(actorHit.style,{left:hit.x/W*100+'%',top:hit.y/H*100+'%',width:hit.w/W*100+'%',height:hit.h/H*100+'%'});actorHit.hidden=(p.alpha??1)<.1;
 }
 function box(slot){return {x:slot.x*W,y:slot.y*H,w:slot.w*W,h:slot.h*H}}
@@ -164,18 +166,41 @@ function render(info){lastRender=info;base.render(info);if(transitioning)return;
 
 }
 function capture(){if(!enabled||!loaded)return null;const clone=scenic.cloneNode(true),source=[scenic,...scenic.querySelectorAll('*')],dest=[clone,...clone.querySelectorAll('*')];source.forEach((el,i)=>{const cs=getComputedStyle(el);let text='';for(const name of cs)text+=`${name}:${cs.getPropertyValue(name)};`;dest[i].style.cssText=text;dest[i].removeAttribute('id');dest[i].removeAttribute('tabindex')});const defs=$('contourDefs').parentNode.cloneNode(true),prefix='snapshot'+transitionId+'-';for(const el of defs.querySelectorAll('[id]'))el.id=prefix+el.id;for(const el of dest)el.style.clipPath=el.style.clipPath.replace(/#(clayForeground|claySupport|artAperture\d+)/g,'#'+prefix+'$1');clone.append(defs);clone.className='outgoingV6';clone.setAttribute('aria-hidden','true');clone.inert=true;return {clone,page,pose:state.pose?{...state.pose}:rawPose(page,STORY[page].duration),card:carryAt(page,STORY[page].duration-.01,state.pose||rawPose(page,STORY[page].duration))}}
-function configure(scene,index){for(const n of [score[index].carry?.n,...(score[index].carry?.stack||[])].filter(Boolean))storyImage(n);transitionId++;transitioning=false;document.querySelectorAll('.outgoingV6').forEach(el=>el.remove());scenic.style.transform='';scenic.style.opacity='';scenic.style.clipPath='';scenic.style.opacity='';$('subtitles').style.opacity='';props.style.opacity='';page=index;base.configure(scene,index);if(index===6){const extra=$('materials').children[0].cloneNode(true);extra.classList.add('sequenceOnly');extra.classList.remove('mobileSelected');extra.dataset.index='3';extra.querySelector('img').src='assets/work-66.webp';extra.querySelector('img').alt=ART_LABELS[66];extra.setAttribute('aria-label','放大原图：'+ART_LABELS[66]);extra.onclick=()=>window.openArtwork(66);$('materials').append(extra)}initializeProps();state={page};for(const image of [$("designPlate"),...$('materials').querySelectorAll('img')])image.decode().catch(()=>{});const next=STATIC_LAYOUTS[index+1];if(next){const bg=new Image();bg.src=`assets/design-v5/plate-${index+1}.webp`;for(const n of new Set([...next.slots.map(s=>s.n),...(score[index+1].props||[]).map(p=>p.n)])){const img=new Image();img.src=`assets/work-${n}.webp`}}}
+function configure(scene,index){for(const n of [score[index].carry?.n,...(score[index].carry?.stack||[])].filter(Boolean))storyImage(n);transitionId++;transitioning=false;document.querySelectorAll('.outgoingV6').forEach(el=>el.remove());scenic.style.transform='';scenic.style.transformOrigin='';scenic.style.opacity='';scenic.style.clipPath='';scenic.style.opacity='';$('subtitles').style.opacity='';props.style.opacity='';page=index;base.configure(scene,index);if(index===6){const extra=$('materials').children[0].cloneNode(true);extra.classList.add('sequenceOnly');extra.classList.remove('mobileSelected');extra.dataset.index='3';extra.querySelector('img').src='assets/work-66.webp';extra.querySelector('img').alt=ART_LABELS[66];extra.setAttribute('aria-label','放大原图：'+ART_LABELS[66]);extra.onclick=()=>window.openArtwork(66);$('materials').append(extra)}initializeProps();state={page};for(const image of [$("designPlate"),...$('materials').querySelectorAll('img')])image.decode().catch(()=>{});const next=STATIC_LAYOUTS[index+1];if(next){const bg=new Image();bg.src=`assets/design-v5/plate-${index+1}.webp`;for(const n of new Set([...next.slots.map(s=>s.n),...(score[index+1].props||[]).map(p=>p.n)])){const img=new Image();img.src=`assets/work-${n}.webp`}}}
 async function prepare(){await prepared;await Promise.all([$('designPlate').decode(),...Array.from($('materials').querySelectorAll('img'),i=>i.decode()),...photoNodes.map(({img})=>img.decode().catch(()=>{})),...[score[page].carry?.n,...(score[page].carry?.stack||[])].filter(Boolean).map(n=>storyImage(n).decode().catch(()=>{}))]);}
-function transitionFrames(type,u){let old='',next='',clip='';switch(type){case 'slide':old=`translateX(${-u*100}%)`;next=`translateX(${(1-u)*100}%)`;break;case 'push':old=`translateX(${-u*100}%)`;next=`translateX(${(1-u)*100}%)`;break;case 'folio':{const a=q(u,0,.58),b=q(u,.38,1);old=`translate(${a*26}%,${a*-15}%) scale(${1-a*.84}) rotate(${a*-3}deg)`;next=`translate(${(1-b)*26}%,${(1-b)*26}%) scale(${.16+b*.84})`;return {old,next,clip,oldOpacity:1-q(u,.25,.6),nextOpacity:q(u,.38,.62)}}case 'fold':old=`perspective(1600px) rotateX(${u*85}deg) scaleY(${1-u*.65})`;next=`translateY(${(1-u)*6}%) scale(${.96+u*.04})`;break;case 'descend':old=`translateY(${-u*100}%)`;next=`translateY(${(1-u)*100}%)`;break;case 'table':old=`perspective(1400px) rotateX(${u*65}deg) translateY(${u*30}%) scale(${1-u*.2})`;next=`translateY(${(1-u)*60}%) scale(${.9+u*.1})`;break;case 'match':clip=`circle(${u*145}% at 68% 53%)`;old='';next='';break;case 'leaf':old=`translateX(${-u*100}%) rotate(${-u*4}deg)`;next=`translateX(${(1-u)*100}%) rotate(${(1-u)*4}deg)`;break;case 'turn':old=`perspective(1800px) rotateY(${-u*95}deg)`;next=`perspective(1800px) rotateY(${(1-u)*70}deg)`;break;case 'stack':old=`translate(${u*24}%,${u*38}%) scale(${1-u*.82}) rotate(${u*5}deg)`;next='';break;}return {old,next,clip}}
-async function handoff(snapshot,from,to,auto){if(!snapshot||!auto||to!==from+1||matchMedia('(prefers-reduced-motion:reduce)').matches){snapshot?.clone.remove();return}const id=transitionId,plan=PERFORMANCE_HANDOFFS[from],type=score[from].transition;transitioning=true;enabled=true;canvas.hidden=false;$('subtitles').style.opacity='0';props.hidden=true;focus.style.opacity='0';snapshot.clone.style.zIndex=type==='match'?'1':'5';scenic.style.zIndex=type==='match'?'2':'0';$('stageCanvas').insertBefore(snapshot.clone,canvas);actorHit.hidden=false;actorHit.setAttribute('aria-label','暂停讲述');
- try{await prepare();if(id!==transitionId)return;const begin=performance.now(),start=snapshot.pose,end={...rawPose(to,0)};await new Promise(resolve=>{function step(now){if(id!==transitionId){resolve();return}const u=clamp((now-begin)/(plan.duration*1000)),v=ease(u),f=transitionFrames(type,v);snapshot.clone.style.transform=f.old;scenic.style.transform=f.next;scenic.style.clipPath=f.clip;scenic.style.opacity=String(f.nextOpacity??1);if(f.oldOpacity!=null)snapshot.clone.style.opacity=String(f.oldOpacity);if(type==='match'||type==='stack')snapshot.clone.style.opacity=String(1-q(u,.65,1));const p={...end,x:mix(start.x,end.x,v),y:mix(start.y,end.y,v),frame:Math.abs(end.x-start.x)>40?300+Math.floor(Math.abs(end.x-start.x)*v/18)%8:407,face:end.x>start.x?1:-1,perch:false,poseBlend:0,lean:Math.sin(Math.PI*u)*-6,squash:1,alpha:1};if(['push','table','turn','leaf','stack','folio'].includes(type)){
-  const phase=clamp(u),sequence=[400,401,402,403,402,404,405,407];p.frame=sequence[Math.min(7,Math.floor(phase*8))];p.face=-1;p.lean=-Math.sin(Math.PI*phase)*3;p.action='pageGesture';
+async function handoff(snapshot,from,to,auto){
+ if(!snapshot||!auto||to!==from+1||matchMedia('(prefers-reduced-motion:reduce)').matches){snapshot?.clone.remove();return}
+ const id=transitionId,plan=PERFORMANCE_HANDOFFS[from],type=score[from].transition;
+ transitioning=true;enabled=true;canvas.hidden=false;$('subtitles').style.opacity='0';props.hidden=true;focus.style.opacity='0';
+ snapshot.clone.style.setProperty('z-index',type==='match'?'1':'5','important');scenic.style.zIndex=type==='match'?'2':'0';
+ $('stageCanvas').insertBefore(snapshot.clone,canvas);actorHit.hidden=false;actorHit.setAttribute('aria-label','暂停讲述');
+ try{
+  await prepare();if(id!==transitionId)return;
+  const begin=performance.now(),start=snapshot.pose,end={...rawPose(to,0)};
+  if(type==='folio'||type==='stack'){
+   const h=hand(start),origin=`${start.x+h.x}px ${start.y+h.y}px`;
+   snapshot.clone.style.setProperty('transform-origin',origin,'important');
+   if(type==='folio')scenic.style.transformOrigin=origin;
+  }
+  await new Promise(resolve=>{function step(now){
+   if(id!==transitionId){resolve();return}
+   const u=clamp((now-begin)/(plan.duration*1000)),f=stageHandoff.sample(type,u,start,end),p=f.pose;
+   snapshot.clone.style.transform=f.old;snapshot.clone.style.opacity=String(f.oldOpacity);
+   scenic.style.transform=f.next;scenic.style.clipPath=f.clip;scenic.style.opacity=String(f.nextOpacity);
+   // Put the loose card away before both hands turn toward the stage screen.
+   const carried=snapshot.card;
+   if(carried&&u<.23){
+    const hh=hand(p),image=storyImage(carried.n),cw=carried.rect.w,ch=cw/(image.naturalWidth/image.naturalHeight);
+    p.carryOverride={...carried,rect:{x:p.x+hh.x-cw*.9,y:p.y+hh.y-ch*.45,w:cw,h:ch},rotation:-8,back:q(u,.04,.18),alpha:1-q(u,.1,.23)};
+   }
+   draw(p);state={...state,page:to,transitioning:true,handoff:plan.name,fraction:u,phase:f.phase,pageMotion:f.move,pose:state.pose};
+   if(u<1)requestAnimationFrame(step);else resolve();
+  }requestAnimationFrame(step)});
+ }finally{
+  snapshot.clone.remove();if(id===transitionId){transitioning=false;scenic.style.transform='';scenic.style.transformOrigin='';scenic.style.clipPath='';scenic.style.opacity='';$('subtitles').style.opacity='';scenic.style.zIndex='';if(lastRender)render({...lastRender,time:0,playing:false})}
  }
- const carried=snapshot.card;if(carried){const hh=hand(p),image=storyImage(carried.n),cw=carried.rect.w,ch=cw/(image.naturalWidth/image.naturalHeight);p.carryOverride={...carried,rect:{x:p.x+hh.x-cw*.9,y:p.y+hh.y-ch*.45,w:cw,h:ch},rotation:-8+Math.sin(u*Math.PI)*4,back:q(u,.25,.65),alpha:1-q(u,.68,.95)}}else p.carryOverride=null;
- draw(p);state={...state,page:to,transitioning:true,handoff:plan.name,fraction:u,pose:state.pose};if(u<1)requestAnimationFrame(step);else resolve()}requestAnimationFrame(step)})}
- finally{snapshot.clone.remove();if(id===transitionId){transitioning=false;scenic.style.transform='';scenic.style.clipPath='';scenic.style.opacity='';$('subtitles').style.opacity='';scenic.style.zIndex='';if(lastRender)render({...lastRender,time:0,playing:false})}}
 }
-function finishHandoff(){if(!transitioning)return;transitionId++;transitioning=false;document.querySelectorAll('.outgoingV6').forEach(el=>el.remove());scenic.style.transform='';scenic.style.clipPath='';scenic.style.opacity='';$('subtitles').style.opacity='';scenic.style.zIndex='';if(lastRender)render({...lastRender,time:0,playing:false})}
+function finishHandoff(){if(!transitioning)return;transitionId++;transitioning=false;document.querySelectorAll('.outgoingV6').forEach(el=>el.remove());scenic.style.transform='';scenic.style.transformOrigin='';scenic.style.clipPath='';scenic.style.opacity='';$('subtitles').style.opacity='';scenic.style.zIndex='';if(lastRender)render({...lastRender,time:0,playing:false})}
 window.director={...base,finishHandoff,configure,prepare,render,capture,handoff,getState:()=>({...state,ready:loaded,enabled}),reset:()=>{base.reset();if(lastRender&&!transitioning)render(lastRender)}};
 window.performanceDirector={hand,score:()=>score,pose:(i,t)=>rawPose(i,t),state:()=>({...state}),handoff:(i)=>{const snap=capture();window.theatre.go(i+1);return handoff(snap,i,i+1,true)}};
 })();
