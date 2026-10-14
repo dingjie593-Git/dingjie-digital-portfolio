@@ -44,7 +44,7 @@ for(let i=1;i<=8;i++){
 }
 PERFORMANCE_SCORE[1].transition='push';
 for(const [i,name] of [[1,'关闭屏幕，进入下一组作品'],[2,'从故事屏进入楼层'],[5,'从平面节点进入空间'],[7,'从作品进入表达能力'],[8,'退出展示，向观众致谢']]){PERFORMANCE_HANDOFFS[i].name=name;PERFORMANCE_HANDOFFS[i].note='屏幕内容归位后换景，人物留在舞台上继续引导。';}
-window.DIRECTOR_EDITION='v13 / 屏幕表演动作';
+window.DIRECTOR_EDITION='v14 / 步态与转场补帧';
 
 function setImage(im,n){const src=`assets/work-${n}.webp`;if(im.getAttribute('src')!==src)im.src=src;im.alt=ART_LABELS[n]||'';}
 function paintImages(container,a,b,s,reduced,diagram,readingMetrics=null){
@@ -69,7 +69,7 @@ function initialize(){
 function home(i,t){return i===8?mix(650,1450,q(t,9,11)):1450}
 function contact(i,e,hand){
  const active=e.kind==='close'?e.opened:viewAt(i,e.at+.05),r=active&&active.slot===e.slot?targetFor(i,active).target:rect(STATIC_LAYOUTS[i].slots[e.slot]);
- const face=r.x+r.w*.5>W*.78?1:-1,frame=e.kind==='swipe'?(face===1?207:206):r.y>H*.5?206:204;
+ const face=r.x+r.w*.5>W*.78?1:-1,frame=e.kind==='swipe'?(face===1?207:206):r.y+r.h<650?204:206;
  const sample={frame,face,perch:false,x:0,y:900},h=hand(sample);
  const tx=r.x+r.w*(face===1?.16:.86),ty=Math.max(r.y+24,Math.min(r.y+r.h-24,900+h.y));
  const root={x:Math.max(130,Math.min(1540,tx-h.x)),y:Math.min(900,ty-h.y)};
@@ -79,7 +79,7 @@ function operator(i,t,p,hand){
  if(i===0||i===9||!cues[i].length)return p;
  const events=[];for(const c of cues[i]){events.push(c);if(c.kind==='tap')events.push({...c,at:c.end,kind:'close',duration:.22,opened:c})}events.sort((a,b)=>a.at-b.at);
  let out={...p,x:home(i,t),y:900,frame:6,action:'listen',face:-1,perch:false,lean:0,lag:0,squash:1,poseBlend:0,screenContact:null};
- if(i===8&&t>9&&t<11){out.action='walk';out.face=1;out.frame=Math.floor((out.x-650)/24)%6}
+ if(i===8&&t>9&&t<11){out.action='walk';out.face=1;out.frame=300+Math.floor((out.x-650)/18)%8}
  const contacts=events.map((e,j)=>({...contact(i,e,hand),at:e.at,duration:e.duration,
   lead:Math.min(.56,Math.max(.12,(e.at-(events[j-1]?events[j-1].at+events[j-1].duration:0))*.27)),
   tail:Math.min(.42,Math.max(.1,((events[j+1]?.at??e.at+3)-e.at-e.duration)*.24))}));
@@ -101,7 +101,7 @@ function operator(i,t,p,hand){
  let left=nodes[0],right=nodes.at(-1);let pathDistance=0;
  for(let j=1;j<nodes.length;j++){if(t<=nodes[j].at){left=nodes[j-1];right=nodes[j];break}pathDistance+=Math.hypot(nodes[j].x-nodes[j-1].x,nodes[j].y-nodes[j-1].y);left=nodes[j]}
  const u=q(t,left.at,right.at||left.at+.01),distance=Math.hypot(right.x-left.x,right.y-left.y),moving=distance>.1&&t<right.at;
- out={...out,x:mix(left.x,right.x,u),y:mix(left.y,right.y,u),action:moving?'walk':'listen',frame:moving?Math.floor((pathDistance+distance*u)/24)%6:200,face:moving?(right.x>=left.x?1:-1):-1};
+ out={...out,x:mix(left.x,right.x,u),y:mix(left.y,right.y,u),action:moving?'walk':'listen',frame:moving?300+Math.floor((pathDistance+distance*u)/18)%8:200,face:moving?(right.x>=left.x?1:-1):-1};
  // Feet stay planted during preparation, touch and recovery; only the arm/torso acts.
  const c=contacts.find(c=>t>=c.at-c.lead&&t<=c.at+c.duration+c.tail);
  if(c){
