@@ -23,15 +23,19 @@
   document.body.classList.toggle('hasStageCaptions',!subtitles.hidden);
   const captionHeight=subtitles.hidden?0:captionBar.offsetHeight;
   const availableHeight=height-captionHeight;
-  const scale=Math.min(width/1672,availableHeight/941);
+  const scale=width/1672,sceneHeight=availableHeight/scale;
   document.documentElement.style.setProperty('--stage-scale',String(scale));
-  viewport.style.height='941px';viewport.style.top=availableHeight/2+'px';
+  document.documentElement.style.setProperty('--scene-height',sceneHeight+'px');
+  document.documentElement.style.setProperty('--scene-aspect',String(sceneHeight/941));
+  window.stageViewport.actorAspect=sceneHeight/941;
+  viewport.style.height=sceneHeight+'px';viewport.style.top='0px';
   paintBackdrop();
   const blocked=portrait.matches;prompt.hidden=!blocked;
   viewport.inert=blocked;
   if(blocked&&!wasPortrait){resume=!!window.theatre?.state().playing;window.theatre?.pause()}
   if(!blocked&&wasPortrait&&resume){resume=false;window.theatre?.play()}
   wasPortrait=blocked;
+  window.dispatchEvent(new Event('stagefit'));
  }
  window.stageViewport={portrait:()=>portrait.matches,fit};
  new MutationObserver(fit).observe(subtitles,{attributes:true,attributeFilter:['hidden']});

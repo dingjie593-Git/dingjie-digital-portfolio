@@ -50,6 +50,7 @@
  window.addEventListener('wheel',e=>{if(dialogOpen()||e.ctrlKey)return;const now=performance.now();if(now-wheelStamp>250)wheel=0;wheel+=e.deltaY;wheelStamp=now;if(Math.abs(wheel)>160&&now-flipStamp>1100){flipStamp=now;go(page+(wheel>0?1:-1),mode==='show'&&playing);wheel=0}},{passive:true});
  let touch=0;world.addEventListener('touchstart',e=>touch=e.touches[0].clientY,{passive:true});world.addEventListener('touchend',e=>{if(dialogOpen()||/BUTTON|A|INPUT/.test(e.target.tagName))return;const d=touch-e.changedTouches[0].clientY;if(Math.abs(d)>80)go(page+(d>0?1:-1),mode==='show'&&playing)},{passive:true});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});window.addEventListener('resize',()=>{seeking=true;director.reset();render();seeking=false});window.addEventListener('castready',render);window.addEventListener('materialready',()=>{const wasSeeking=seeking;if(!playing)seeking=true;director.reset();render();seeking=wasSeeking});reduced.addEventListener('change',render);
+ window.addEventListener('stagefit',()=>{director.reset();render()});
  document.body.dataset.language='both';go(Math.max(0,Math.min(9,Number(location.hash.match(/scene-(\d+)/)?.[1]||1)-1)),false);
  window.theatre={play,go:n=>{unlocked=true;go(n,false)},seek:t=>seek(t,false),pause,state:()=>({page,beat,playing,mode,time:voice.currentTime,position:voice.currentTime,duration:scene().duration,performer:director.getState()})};
 })();

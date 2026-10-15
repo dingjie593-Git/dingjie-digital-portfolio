@@ -1,6 +1,7 @@
 (() => {
 'use strict';
 const $=id=>document.getElementById(id),base=window.director,W=1672,H=941,score=PERFORMANCE_SCORE;
+const actorAspect=()=>window.stageViewport?.actorAspect||1;
 const clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,n)),mix=(a,b,u)=>a+(b-a)*u,ease=u=>{u=clamp(u);return u*u*(3-2*u)},q=(t,a,b)=>ease((t-a)/(b-a));
 const scenic=document.createElement('div');scenic.id='sceneryV6';
 const nodes=['designPlate','headline','mobileClay','materials','supportPlate','foregroundPlate','labels','clayBook','poster','coverMobile','clayPortrait','ending'];
@@ -79,7 +80,7 @@ function anatomy(p){
  const scale=342/(ref.b-ref.u),native=a.nativeFaces?.[i]??(bank===2?-1:1),face=p.face*native,anchor=p.perch?b.u+(b.b-b.u)*.64:b.b,cx=bank===3||bank===8?b.headX:bank===6||bank===7?b.footX:bank>=3?b.hipX:b.footX;
  return {bank,a,i,b,scale,face,anchor,cx};
 }
-function hand(p){const {bank,i,b,scale,face,anchor,cx}=anatomy(p),x=bank===5?.02:bank===4?[.8,.95,.98,.98,.94,.8,.55,.5,.8,.8,.98,.65][i]:(bank===3||bank===8)?.8:bank===2?[.3,.3,.08,.02,.02,.02,.02,.02,.25,.25,.3,.8][i]:.7,y=bank===5?.54:bank===4?[.31,.28,.27,.27,.29,.32,.52,.6,.3,.4,.69,.49][i]:(bank===3||bank===8)?.48:bank===2?[.61,.61,.27,.10,.015,.14,.33,.33,.30,.34,.61,.63][i]:.5;return {x:(b.l+(b.r-b.l)*x-cx)*scale*face,y:(b.u+(b.b-b.u)*y-anchor)*scale}}
+function hand(p){const {bank,i,b,scale,face,anchor,cx}=anatomy(p),x=bank===5?.02:bank===4?[.8,.95,.98,.98,.94,.8,.55,.5,.8,.8,.98,.65][i]:(bank===3||bank===8)?.8:bank===2?[.3,.3,.08,.02,.02,.02,.02,.02,.25,.25,.3,.8][i]:.7,y=bank===5?.54:bank===4?[.31,.28,.27,.27,.29,.32,.52,.6,.3,.4,.69,.49][i]:(bank===3||bank===8)?.48:bank===2?[.61,.61,.27,.10,.015,.14,.33,.33,.30,.34,.61,.63][i]:.5;return {x:(b.l+(b.r-b.l)*x-cx)*scale*face*actorAspect(),y:(b.u+(b.b-b.u)*y-anchor)*scale}}
 
 const storyPictures=new Map();
 function storyImage(n){if(!storyPictures.has(n)){const im=new Image();im.src=`assets/work-${n}.webp`;storyPictures.set(n,im)}return storyPictures.get(n)}
@@ -97,7 +98,7 @@ function paperCard(card){
  const one=(image,x,y,angle=0)=>{context.save();context.translate(x,y);context.rotate(angle);context.shadowColor='#32281f30';context.shadowBlur=7;context.shadowOffsetY=4;context.fillStyle='#e6d8bd';context.fillRect(-r.w/2,-r.h/2,r.w,r.h);context.shadowColor='transparent';if(card.back<1){context.globalAlpha*=1-(card.back||0);if([3,18,48].includes(card.n))context.globalCompositeOperation='multiply';context.drawImage(image,-r.w/2,-r.h/2,r.w,r.h)}context.restore()};
  (card.stack||[]).forEach((n,i)=>{const image=storyImage(n);if(image.naturalWidth)one(image,-12*(i+1),-8*(i+1),-.06*(i+1))});one(im,0,0);context.restore();
 }
-function supportAt(t,p){const c=window.screenStage?.support(p)||score[page].support;if(!c||t<c.start||t>c.end)return;const u=q(t,c.start,c.start+c.in)*(1-q(t,c.end-c.out,c.end)),top=mix(900,c.top,u),w=c.width,x=c.x-w/2,h=900-top;
+function supportAt(t,p){const c=window.screenStage?.support(p)||score[page].support;if(!c||t<c.start||t>c.end)return;const u=q(t,c.start,c.start+c.in)*(1-q(t,c.end-c.out,c.end)),top=mix(900,c.top,u),w=c.width*actorAspect(),x=c.x-w/2,h=900-top;
  context.save();context.globalAlpha=u;context.fillStyle='#30271f28';context.beginPath();context.ellipse(c.x,904,w*.63,11,0,0,Math.PI*2);context.fill();
  const gradient=context.createLinearGradient(x,top,x+w,900);if(c.color==='olive'){gradient.addColorStop(0,'#a1aa73');gradient.addColorStop(.4,'#839055');gradient.addColorStop(1,'#64713d')}else{gradient.addColorStop(0,'#d58d58');gradient.addColorStop(.45,'#c57643');gradient.addColorStop(1,'#9a562f')}
  context.fillStyle=gradient;context.beginPath();context.moveTo(x+22,top+4);context.bezierCurveTo(x+w*.35,top-4,x+w*.75,top+2,x+w-18,top+5);context.quadraticCurveTo(x+w+3,top+12,x+w,top+31);context.lineTo(x+w-3,900-14);context.quadraticCurveTo(x+w-5,901,x+w-25,902);context.lineTo(x+20,900);context.quadraticCurveTo(x-3,899,x,879);context.lineTo(x-2,top+28);context.quadraticCurveTo(x-1,top+8,x+22,top+4);context.fill();
@@ -107,7 +108,7 @@ function supportAt(t,p){const c=window.screenStage?.support(p)||score[page].supp
 function paintPose(p,alpha=1){
  if(p.action==='walk')p={...p,lean:0,lag:0,squash:1};
  const shape=anatomy(p),{a,i,b,scale,face,anchor,cx}=shape,sx=a.regions[i][0]+b.l,sy=a.regions[i][1]+b.u,sw=b.r-b.l+1,sh=b.b-b.u+1;
- context.save();context.globalAlpha*=alpha;context.translate(p.x,p.y);context.scale(face*(p.turnScale??1),p.squash||1);
+ context.save();context.globalAlpha*=alpha;context.translate(p.x,p.y);context.scale(face*(p.turnScale??1)*actorAspect(),p.squash||1);
  const strips=Math.abs(p.lean||0)+Math.abs(p.lag||0)>.05?24:1;
  for(let j=0;j<strips;j++){const v=j/strips,v2=(j+1)/strips,dy=(b.u+sh*v-anchor)*scale,dh=sh/strips*scale+.5,offset=((p.lean||0)*(1-v)**2+(p.lag||0)*(1-v)**4)*face;
   context.drawImage(a.image,sx,sy+sh*v,sw,Math.min(sh/strips+1,sh-sh*v),(b.l-cx)*scale+offset,dy,sw*scale,dh);
@@ -119,16 +120,16 @@ function draw(p){
  context.clearRect(0,0,W,H);if(!loaded||!enabled)return;
  if(p.action==='walk'&&Number.isFinite(p.walkDistance))p={...p,frame:300+walkGait.frame(p.walkDistance)};
  // Guard the complete silhouette at stage edges, including transition gestures.
- const shape=anatomy(p),stretch=p.turnScale??1,lo=(shape.face>0?shape.b.l-shape.cx:shape.cx-shape.b.r)*shape.scale*stretch,hi=(shape.face>0?shape.b.r-shape.cx:shape.cx-shape.b.l)*shape.scale*stretch;
+ const shape=anatomy(p),stretch=(p.turnScale??1)*actorAspect(),lo=(shape.face>0?shape.b.l-shape.cx:shape.cx-shape.b.r)*shape.scale*stretch,hi=(shape.face>0?shape.b.r-shape.cx:shape.cx-shape.b.l)*shape.scale*stretch;
  const guardedX=Math.max(18-lo,Math.min(W-18-hi,p.x));if(guardedX!==p.x){const dx=guardedX-p.x;p={...p,x:guardedX,edgeGuard:true};if(p.screenContact)p.screenContact={...p.screenContact,target:{x:p.screenContact.target.x+dx,y:p.screenContact.target.y}}}
 
 
  if(!p.reduced)supportAt(p.time||0,p);context.save();context.globalAlpha=p.alpha??1;
- context.fillStyle=page===0||page===3||page===9?'#30352350':'#67583e35';context.beginPath();context.ellipse(p.x,p.perch?900:p.y+1,p.perch?28:46,7,0,0,Math.PI*2);context.fill();
+ context.fillStyle=page===0||page===3||page===9?'#30352350':'#67583e35';context.beginPath();context.ellipse(p.x,p.perch?900:p.y+1,(p.perch?28:46)*actorAspect(),7,0,0,Math.PI*2);context.fill();
  const f=p.poseBlend||0;if(f>.001)paintPose({...p,frame:p.previousFrame},f);paintPose(p,1-f);
  const card=p.carryOverride===undefined?carryAt(page,p.time||0,p):p.carryOverride;paperCard(card);context.restore();
  const {b,scale,face,anchor,cx,i}=anatomy(p),lean=Math.abs(p.lean||0)+Math.abs(p.lag||0);
- state.pose={...p,height:(b.b-b.u)*scale,bounds:{x:p.x+(face>0?b.l-cx:-(b.r-cx))*scale-lean,y:p.y+(b.u-anchor)*scale,w:(b.r-b.l)*scale+lean*2,h:(b.b-b.u)*scale}};state.storyCard=card?{n:card.n,picked:card.picked,back:card.back}:null;
+ state.pose={...p,height:(b.b-b.u)*scale,bounds:{x:p.x+((face>0?b.l-cx:-(b.r-cx))*scale-lean)*actorAspect(),y:p.y+(b.u-anchor)*scale,w:((b.r-b.l)*scale+lean*2)*actorAspect(),h:(b.b-b.u)*scale}};state.storyCard=card?{n:card.n,picked:card.picked,back:card.back}:null;
  const hit=state.pose.bounds;Object.assign(actorHit.style,{left:hit.x/W*100+'%',top:hit.y/H*100+'%',width:hit.w/W*100+'%',height:hit.h/H*100+'%'});actorHit.hidden=(p.alpha??1)<.1;
 }
 function box(slot){return {x:slot.x*W,y:slot.y*H,w:slot.w*W,h:slot.h*H}}

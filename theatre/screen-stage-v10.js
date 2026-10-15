@@ -25,14 +25,20 @@ function imageState(i,slot,t){let n=STATIC_LAYOUTS[i].slots[slot].n,old=n,progre
  return {n,old,progress,event};
 }
 function viewAt(i,t){return cues[i].find(c=>c.kind==='tap'&&t>=c.at+.12&&t<c.end+.8)||null}
-function fit(envelope,n){const im=picture(n),[x,y,w,h]=envelope,r=(im.naturalWidth||w)/(im.naturalHeight||h),fw=Math.min(w,h*r),fh=fw/r;return {x:x+(w-fw)/2,y:y+(h-fh)/2,w:fw,h:fh}}
+ function safeEnvelope(envelope){
+  const stage=$('stageCanvas').getBoundingClientRect(),heading=document.querySelector('.headline').getBoundingClientRect();
+  const [x,y,w,h]=envelope,top=Math.max(y,(heading.bottom-stage.top)/stage.height*H+18);
+  return [x,top,w,Math.min(h,930-top)];
+ }
+ function fit(envelope,n){const im=picture(n),[x,y,w,h]=safeEnvelope(envelope),r=(im.naturalWidth||w)/(im.naturalHeight||h),sy=window.stageViewport?.actorAspect||1,fw=Math.min(w,h*sy*r),fh=fw/r/sy;return {x:x+(w-fw)/2,y:y+(h-fh)/2,w:fw,h:fh}}
 function targetFor(i,c){
  const n=imageState(i,c.slot,c.at).n,im=picture(n),nw=im.naturalWidth||1,nh=im.naturalHeight||1,source=rect(STATIC_LAYOUTS[i].slots[c.slot]);
- const nativeScale=diagrams.has(n)?Math.min(source.w/nw,source.h/nh):Math.max(source.w/nw,source.h/nh);
- let target=fit(c.box,n);if(Math.min(target.w/nw,target.h/nh)<nativeScale*1.1)target=fit(readingEnvelope,n);
- return {target,nativeScale,zoomScale:target.w/nw};
+ const sy=window.stageViewport?.actorAspect||1,nativeScale=diagrams.has(n)?Math.min(source.w/nw,source.h*sy/nh):Math.max(source.w/nw,source.h*sy/nh);
+ let target=fit(c.box,n),crop=false;if(target.w/nw<nativeScale*1.1)target=fit(readingEnvelope,n);
+  if(!diagrams.has(n)&&target.w/nw<nativeScale*1.1){const [x,y,w,h]=safeEnvelope(readingEnvelope);target={x,y,w,h};crop=true;}
+ return {target,crop,nativeScale,zoomScale:crop?Math.max(target.w/nw,target.h*sy/nh):target.w/nw};
 }
-function readingBox(i,t,c){const s=imageState(i,c.slot,t),{target,nativeScale,zoomScale}=targetFor(i,c),source=rect(STATIC_LAYOUTS[i].slots[c.slot]),u=q(t,c.at+.12,c.at+.85)*(1-q(t,c.end+.12,c.end+.8));return {box:Object.fromEntries(['x','y','w','h'].map(k=>[k,mix(source[k],target[k],u)])),u,state:s,source,target,nativeScale,zoomScale}}
+function readingBox(i,t,c){const s=imageState(i,c.slot,t),{target,crop,nativeScale,zoomScale}=targetFor(i,c),source=rect(STATIC_LAYOUTS[i].slots[c.slot]),u=q(t,c.at+.12,c.at+.85)*(1-q(t,c.end+.12,c.end+.8));return {box:Object.fromEntries(['x','y','w','h'].map(k=>[k,mix(source[k],target[k],u)])),u,state:s,source,target,crop,nativeScale,zoomScale}}
 const zoom=document.createElement('div');zoom.id='screenReadingV10';zoom.hidden=true;
 const zOld=new Image(),zNew=new Image();zoom.append(zOld,zNew);$('stageCanvas').append(zoom);
 const ring=document.createElement('div');ring.id='screenTouchV10';ring.hidden=true;$('stageCanvas').append(ring);
@@ -49,10 +55,10 @@ window.DIRECTOR_EDITION='v20 / 原版人物与另一侧领步';
 function setImage(im,n){const src=`assets/work-${n}.webp`;if(im.getAttribute('src')!==src)im.src=src;im.alt=ART_LABELS[n]||'';}
 function paintImages(container,a,b,s,reduced,diagram,readingMetrics=null){
  setImage(a,s.old);setImage(b,s.n);const u=reduced?1:s.progress;
- const w=readingMetrics?.box.w||container.clientWidth||1,h=readingMetrics?.box.h||container.clientHeight||1;
+ const w=container.clientWidth||1,h=container.clientHeight||1;
  for(const [im,n,offset] of [[a,s.old,-u],[b,s.n,1-u]]){
   const asset=picture(n),nw=asset.naturalWidth||w,nh=asset.naturalHeight||h,contain=Math.min(w/nw,h/nh),cover=Math.max(w/nw,h/nh);
-  const scale=diagrams.has(n)?contain:readingMetrics?mix(cover,contain,readingMetrics.u):cover;
+  const scale=diagrams.has(n)?contain:readingMetrics?mix(cover,readingMetrics.crop?cover:contain,readingMetrics.u):cover;
   const iw=nw*scale,ih=nh*scale;
   Object.assign(im.style,{width:iw/w*100+'%',height:ih/h*100+'%',left:(w-iw)/w*50+'%',top:(h-ih)/h*50+'%',objectFit:'fill',transform:`translateX(${offset*w/iw*100}%)`});
  }
@@ -138,8 +144,9 @@ function operator(i,t,p,hand){
   }
   if(left.face&&left.face!==out.face&&t-left.at<.25){out.turnScale=1;out.acting.phase='turn'}
  }
- const elevated=contacts.find(c=>c.y<875&&t>=c.at-c.lead-1.6&&t<=c.at+c.duration+c.tail+1.6);
- if(elevated)out.screenSupport={start:elevated.at-elevated.lead-1.6,in:.35,end:elevated.at+elevated.duration+elevated.tail+1.6,out:.35,x:elevated.x,top:elevated.y,width:170,color:'olive'};
+ const planted=out.y<875&&!moving?contacts.find(c=>Math.hypot(c.x-out.x,c.y-out.y)<1):null;
+ const elevated=planted||contacts.find(c=>c.y<875&&t>=c.at-c.lead-1.6&&t<=c.at+c.duration+c.tail+1.6);
+ if(elevated)out.screenSupport={start:Math.min(elevated.at-elevated.lead-1.6,planted?t-.36:Infinity),in:.35,end:Math.max(elevated.at+elevated.duration+elevated.tail+1.6,planted?t+.36:-Infinity),out:.35,x:elevated.x,top:elevated.y,width:170,color:'olive'};
  if(i===8&&t>=34.9){
   const anchor=operator(i,34.899,p,hand),arrival=q(t,34.9,38.5),depart=q(t,44.95,STORY[8].duration-.45),x=t<44.95?mix(anchor.x,1050,arrival):mix(1050,1450,depart);
   const traveling=t<38.5||t>=44.95&&depart<1,pointing=t>=39.1&&t<44.55;
