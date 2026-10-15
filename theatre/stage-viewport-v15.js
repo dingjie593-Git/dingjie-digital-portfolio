@@ -18,9 +18,23 @@
  plate.addEventListener('load',paintBackdrop);
  new MutationObserver(syncBackdrop).observe(plate,{attributes:true,attributeFilter:['src']});syncBackdrop();
  let wasPortrait=false,resume=false;
+ let captionMeasureKey='';
+ function measureCompactCaptions(width){
+  if(!matchMedia('(orientation:landscape) and (max-height:500px)').matches)return;
+  const key=width+':'+document.body.dataset.language;if(key===captionMeasureKey)return;
+  // Reserve the longest actual line once per size/language, so the stage never jumps between sentences.
+  const probe=captionBar.cloneNode(true);Object.assign(probe.style,{height:'auto',display:'flex',visibility:'hidden'});
+  probe.querySelector('#subtitles').hidden=false;document.body.append(probe);
+  const cn=probe.querySelector('#caption'),en=probe.querySelector('#translation');let height=0;
+  for(const line of [...STORY.flatMap(s=>s.subtitles),...(window.INTRO_GUIDE?.steps||[])]){
+   cn.textContent=line.cn;en.textContent=line.en;height=Math.max(height,probe.offsetHeight);
+  }
+  probe.remove();document.documentElement.style.setProperty('--compact-caption-height',height+'px');captionMeasureKey=key;
+ }
  function fit(){
   const width=document.documentElement.clientWidth,height=innerHeight;
   document.body.classList.toggle('hasStageCaptions',!subtitles.hidden);
+  measureCompactCaptions(width);
   const captionHeight=subtitles.hidden?0:captionBar.offsetHeight;
   const availableHeight=height-captionHeight;
   const scale=width/1672,sceneHeight=availableHeight/scale;
@@ -40,5 +54,7 @@
  window.stageViewport={portrait:()=>portrait.matches,fit};
  new MutationObserver(fit).observe(subtitles,{attributes:true,attributeFilter:['hidden']});
  new MutationObserver(fit).observe(document.body,{attributes:true,attributeFilter:['data-language']});
+ // Subtitle wrapping changes in short landscape webviews; reserve only its actual height.
+ new ResizeObserver(fit).observe(captionBar);
  window.addEventListener('resize',fit);portrait.addEventListener('change',fit);fit();
 })();
