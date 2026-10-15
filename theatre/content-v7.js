@@ -7,6 +7,6 @@ const films=document.createElement('section');films.id='filmLinksV7';films.setAt
 const title=document.createElement('p');title.textContent='视频编排与剪辑 · 完整原视频 ↗';films.append(title);
 for(const [name,anchor] of [['《晨境里》','chenjingli'],['《漕河泾》','caohejing']]){const a=document.createElement('a');a.href='https://dingjie593-git.github.io/dingjie-film-portfolio/#'+anchor;a.target='_blank';a.rel='noopener';a.textContent=name+' ↗';a.addEventListener('click',()=>window.theatre.pause());films.append(a)}
 scenery.append(career,films);
-director.configure=(scene,index)=>{old(scene,index);career.hidden=index!==0;films.hidden=index!==8;if(index===0){$('designPlate').src='assets/design-v5/cover-typeset.webp';$('foregroundPlate').hidden=true;$('coverPlay').replaceChildren(document.createTextNode('跟我走一遍  ▶'));}if(index===9){$('ending').querySelector('h2').textContent='THANK YOU.';$('ending').querySelector('p').innerHTML='丁洁<br>室内设计 · 求职作品集'}};
+director.configure=(scene,index)=>{old(scene,index);career.hidden=index!==0;films.hidden=index!==8;if(index===0){$('designPlate').src='assets/design-v5/cover-typeset.webp';$('foregroundPlate').hidden=true;$('coverPlay').replaceChildren(document.createTextNode('跟我走一遍  ▶'));}if(index===9){$('ending').querySelector('h2').textContent='THANK YOU.'}};
 director.render=info=>{oldRender(info);films.classList.toggle('speaking',document.body.dataset.page==='8'&&info.mode==='show'&&info.time>=34.74);};
 })();
