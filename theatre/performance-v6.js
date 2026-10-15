@@ -106,12 +106,13 @@ function supportAt(t,p){const c=window.screenStage?.support(p)||score[page].supp
 }
 function paintPose(p,alpha=1){
  if(p.action==='walk')p={...p,lean:0,lag:0,squash:1};
- const {a,i,b,scale,face,anchor,cx}=anatomy(p),sx=a.regions[i][0]+b.l,sy=a.regions[i][1]+b.u,sw=b.r-b.l+1,sh=b.b-b.u+1;
+ const shape=anatomy(p),{a,i,b,scale,face,anchor,cx}=shape,sx=a.regions[i][0]+b.l,sy=a.regions[i][1]+b.u,sw=b.r-b.l+1,sh=b.b-b.u+1;
  context.save();context.globalAlpha*=alpha;context.translate(p.x,p.y);context.scale(face*(p.turnScale??1),p.squash||1);
  const strips=Math.abs(p.lean||0)+Math.abs(p.lag||0)>.05?24:1;
  for(let j=0;j<strips;j++){const v=j/strips,v2=(j+1)/strips,dy=(b.u+sh*v-anchor)*scale,dh=sh/strips*scale+.5,offset=((p.lean||0)*(1-v)**2+(p.lag||0)*(1-v)**4)*face;
   context.drawImage(a.image,sx,sy+sh*v,sw,Math.min(sh/strips+1,sh-sh*v),(b.l-cx)*scale+offset,dy,sw*scale,dh);
  }
+ speechMouth.paint(context,shape,p,speechMouth.level(page,p.time||0,!!lastRender?.playing&&!transitioning));
  context.restore();
 }
 function draw(p){
