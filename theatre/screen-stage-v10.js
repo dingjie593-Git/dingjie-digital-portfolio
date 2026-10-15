@@ -44,7 +44,7 @@ for(let i=1;i<=8;i++){
 }
 PERFORMANCE_SCORE[1].transition='push';
 for(const [i,name] of [[1,'关闭屏幕，进入下一组作品'],[2,'从故事屏进入楼层'],[5,'从平面节点进入空间'],[7,'从作品进入表达能力'],[8,'退出展示，向观众致谢']]){PERFORMANCE_HANDOFFS[i].name=name;PERFORMANCE_HANDOFFS[i].note='屏幕内容归位后换景，人物留在舞台上继续引导。';}
-window.DIRECTOR_EDITION='v19 / 固定人物与连续骨骼步态';
+window.DIRECTOR_EDITION='v20 / 原版人物与另一侧领步';
 
 function setImage(im,n){const src=`assets/work-${n}.webp`;if(im.getAttribute('src')!==src)im.src=src;im.alt=ART_LABELS[n]||'';}
 function paintImages(container,a,b,s,reduced,diagram,readingMetrics=null){
