@@ -36,7 +36,7 @@ const prepared=Promise.all(atlases.map(async a=>{
  a.regions=a.manifest?await fetch(a.manifest).then(r=>{if(!r.ok)throw Error('Missing sprite regions');return r.json()}):Array.from({length:a.count},(_,i)=>[i%4*a.w,Math.floor(i/4)*a.h,a.w,a.h]);
  const c=document.createElement('canvas'),ctx=c.getContext('2d',{willReadFrequently:true});a.boxes=[];if(a.src.includes('/screen.webp'))a.nativeFaces=[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1];if(a.src.includes('/point.webp'))a.nativeFaces=[-1];
  for(const [x,y,w,h] of a.regions){c.width=w;c.height=h;ctx.drawImage(a.image,x,y,w,h,0,0,w,h);a.boxes.push(bounds(ctx.getImageData(0,0,w,h).data,w,h))}
-})).then(()=>{loaded=true;window.dispatchEvent(new Event('castready'))});
+})).then(async()=>{await speechMouth.prepare(atlases);loaded=true;window.dispatchEvent(new Event('castready'))});
 const frames={look:6,present:10,nod:11,reach:100,brace:400,climb:102,balance:103,touch:104,recoil:105,sit:106,grasp:107,pull:404,push:402,dust:110,wave:111,inspect:11,front:6,listen:6,point:8,hold:9};
 const flips=[1,1,1,1,-1,1,1,1,-1,-1,1,-1],basicFacing=[1,1,1,1,1,1,1,1,-1,1,1,-1];
 function businessAt(scene,time){

@@ -97,7 +97,9 @@ function operator(i,t,p,hand){
  for(const c of contacts){
   const prev=nodes.at(-1),arrival=c.at-c.lead,gap=arrival-prev.at,rest={x:home(i,(prev.at+arrival)/2),y:900};
   const back=travel(prev,rest),forth=travel(rest,c);
-  if(gap>back+forth+.65){nodes.push({...rest,at:prev.at+back},{...rest,at:arrival-forth})}
+  // Return aside only for a genuine reading hold or to step off an elevated support.
+  // Short gaps keep her planted, rather than sending her home and back after every touch.
+  if((prev.y<875||prev.event?.kind==='tap')&&gap>back+forth+2.2){nodes.push({...rest,at:prev.at+back},{...rest,at:arrival-forth})}
   else if(gap>travel(prev,c)+.2)nodes.push({...prev,at:arrival-travel(prev,c)});
   nodes.push({...c,at:arrival},{...c,at:c.at+c.duration+c.tail});
  }

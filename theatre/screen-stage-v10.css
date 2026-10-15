@@ -7,3 +7,5 @@
 .screenViewportV10>img{mask-image:none!important}#screenReadingV10{background:var(--paper)}
 
 .screenViewportV10{position:absolute;inset:0;overflow:hidden;contain:paint}
+#screenReadingV10{border-radius:.35cqw;filter:drop-shadow(0 .35cqw .65cqw #342d2420)}
+body[data-page='9'] #evidence{display:none}
